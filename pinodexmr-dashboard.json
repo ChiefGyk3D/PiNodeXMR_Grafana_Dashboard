@@ -3,7 +3,7 @@
     {
       "name": "DS_PROMETHEUS",
       "label": "Prometheus",
-      "description": "",
+      "description": "Prometheus datasource with monerod metrics from node_exporter textfile collector",
       "type": "datasource",
       "pluginId": "prometheus",
       "pluginName": "Prometheus"
@@ -14,7 +14,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "12.0.0"
+      "version": "10.0.0"
     },
     {
       "type": "datasource",
@@ -42,8 +42,26 @@
     },
     {
       "type": "panel",
-      "id": "bargauge",
-      "name": "Bar gauge",
+      "id": "table",
+      "name": "Table",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "text",
+      "name": "Text",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "barchart",
+      "name": "Bar chart",
+      "version": ""
+    },
+    {
+      "type": "panel",
+      "id": "row",
+      "name": "Row",
       "version": ""
     }
   ],
@@ -63,17 +81,35 @@
       }
     ]
   },
-  "description": "Comprehensive monitoring dashboard for a Monero (XMR) full node running PiNodeXMR on a Raspberry Pi / ARM64 SBC. Tracks blockchain sync, mempool, P2P network, system resources, and storage.",
+  "description": "Comprehensive Monero node monitoring dashboard for PiNodeXMR devices. Tracks blockchain sync, network connections, mempool, mining difficulty, disk usage, and device health via Prometheus textfile collector.",
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
   "id": null,
-  "links": [],
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": false,
+      "tags": [],
+      "targetBlank": true,
+      "title": "GitHub Repository",
+      "tooltip": "PiNodeXMR Grafana Dashboard source code and documentation",
+      "type": "link",
+      "url": "https://github.com/ChiefGyk3D/PiNodeXMR_Grafana_Dashboard"
+    }
+  ],
   "liveNow": false,
   "panels": [
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
       "id": 1,
       "panels": [],
       "title": "\u26a1 Monero Node Status",
@@ -84,11 +120,22 @@
       "type": "stat",
       "title": "Node Up",
       "description": "Whether the monerod daemon is running and reachable",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 4, "w": 3, "x": 0, "y": 1 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 0,
+        "y": 1
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "monerod_up{instance=~\"$instance\"}",
           "legendFormat": "Node Status",
           "refId": "A",
@@ -99,16 +146,42 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "mappings": [
-            { "options": { "0": { "color": "red", "index": 0, "text": "DOWN" } }, "type": "value" },
-            { "options": { "1": { "color": "green", "index": 1, "text": "UP" } }, "type": "value" }
+            {
+              "options": {
+                "0": {
+                  "color": "red",
+                  "index": 0,
+                  "text": "DOWN"
+                }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "1": {
+                  "color": "green",
+                  "index": 1,
+                  "text": "UP"
+                }
+              },
+              "type": "value"
+            }
           ],
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "green", "value": 1 }
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
             ]
           }
         },
@@ -121,7 +194,9 @@
         "textMode": "auto",
         "wideLayout": true,
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -134,11 +209,22 @@
       "type": "stat",
       "title": "Sync Status",
       "description": "Whether the node is fully synchronized with the Monero network",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 4, "w": 3, "x": 3, "y": 1 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 3,
+        "y": 1
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "monerod_synchronized{instance=~\"$instance\"}",
           "legendFormat": "Sync Status",
           "refId": "A",
@@ -149,16 +235,42 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "mappings": [
-            { "options": { "0": { "color": "yellow", "index": 0, "text": "Syncing" } }, "type": "value" },
-            { "options": { "1": { "color": "green", "index": 1, "text": "Synced" } }, "type": "value" }
+            {
+              "options": {
+                "0": {
+                  "color": "yellow",
+                  "index": 0,
+                  "text": "Syncing"
+                }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "1": {
+                  "color": "green",
+                  "index": 1,
+                  "text": "Synced"
+                }
+              },
+              "type": "value"
+            }
           ],
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "yellow", "value": null },
-              { "color": "green", "value": 1 }
+              {
+                "color": "yellow",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
             ]
           }
         },
@@ -171,7 +283,9 @@
         "textMode": "auto",
         "wideLayout": true,
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -184,11 +298,22 @@
       "type": "stat",
       "title": "Blockchain Height",
       "description": "Current blockchain height of the local node",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 4, "w": 3, "x": 6, "y": 1 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 6,
+        "y": 1
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "monerod_height{instance=~\"$instance\"}",
           "legendFormat": "Height",
           "refId": "A",
@@ -199,13 +324,19 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "fixedColor": "#FF6600", "mode": "fixed" },
+          "color": {
+            "fixedColor": "#FF6600",
+            "mode": "fixed"
+          },
           "decimals": 0,
           "unit": "none",
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "#FF6600", "value": null }
+              {
+                "color": "#FF6600",
+                "value": null
+              }
             ]
           }
         },
@@ -218,7 +349,9 @@
         "textMode": "auto",
         "wideLayout": true,
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -231,11 +364,22 @@
       "type": "stat",
       "title": "Network Difficulty",
       "description": "Current Monero network mining difficulty",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 4, "w": 3, "x": 9, "y": 1 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 9,
+        "y": 1
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "monerod_difficulty{instance=~\"$instance\"}",
           "legendFormat": "Difficulty",
           "refId": "A",
@@ -246,13 +390,19 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "fixedColor": "#FF6600", "mode": "fixed" },
+          "color": {
+            "fixedColor": "#FF6600",
+            "mode": "fixed"
+          },
           "unit": "short",
           "decimals": 2,
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "#FF6600", "value": null }
+              {
+                "color": "#FF6600",
+                "value": null
+              }
             ]
           }
         },
@@ -265,7 +415,9 @@
         "textMode": "auto",
         "wideLayout": true,
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -278,11 +430,22 @@
       "type": "stat",
       "title": "Monero Version",
       "description": "Running monerod version reported by the daemon",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 4, "w": 3, "x": 12, "y": 1 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 12,
+        "y": 1
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "monerod_info{instance=~\"$instance\"}",
           "legendFormat": "{{version}}",
           "refId": "A",
@@ -293,11 +456,17 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "fixedColor": "#FF6600", "mode": "fixed" },
+          "color": {
+            "fixedColor": "#FF6600",
+            "mode": "fixed"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "#FF6600", "value": null }
+              {
+                "color": "#FF6600",
+                "value": null
+              }
             ]
           }
         },
@@ -310,7 +479,9 @@
         "textMode": "name",
         "wideLayout": true,
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -323,11 +494,22 @@
       "type": "stat",
       "title": "Uptime",
       "description": "Time since the monerod daemon was started",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 4, "w": 3, "x": 15, "y": 1 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 15,
+        "y": 1
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "time() - monerod_start_time_seconds{instance=~\"$instance\"}",
           "legendFormat": "Uptime",
           "refId": "A",
@@ -338,12 +520,18 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "fixedColor": "#FF6600", "mode": "fixed" },
+          "color": {
+            "fixedColor": "#FF6600",
+            "mode": "fixed"
+          },
           "unit": "s",
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "#FF6600", "value": null }
+              {
+                "color": "#FF6600",
+                "value": null
+              }
             ]
           }
         },
@@ -356,7 +544,9 @@
         "textMode": "auto",
         "wideLayout": true,
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -369,11 +559,22 @@
       "type": "stat",
       "title": "Total Transactions",
       "description": "Total number of transactions in the Monero blockchain",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 4, "w": 3, "x": 18, "y": 1 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 18,
+        "y": 1
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "monerod_tx_count{instance=~\"$instance\"}",
           "legendFormat": "TX Count",
           "refId": "A",
@@ -384,13 +585,19 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "fixedColor": "#FF6600", "mode": "fixed" },
+          "color": {
+            "fixedColor": "#FF6600",
+            "mode": "fixed"
+          },
           "unit": "short",
           "decimals": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "#FF6600", "value": null }
+              {
+                "color": "#FF6600",
+                "value": null
+              }
             ]
           }
         },
@@ -403,7 +610,9 @@
         "textMode": "auto",
         "wideLayout": true,
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -416,11 +625,22 @@
       "type": "stat",
       "title": "Hard Fork Version",
       "description": "Current Monero hard fork (consensus) version",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 4, "w": 3, "x": 21, "y": 1 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 21,
+        "y": 1
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "monerod_hardfork_version{instance=~\"$instance\"}",
           "legendFormat": "HF v{{__name__}}",
           "refId": "A",
@@ -431,11 +651,17 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "fixedColor": "green", "mode": "fixed" },
+          "color": {
+            "fixedColor": "green",
+            "mode": "fixed"
+          },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null }
+              {
+                "color": "green",
+                "value": null
+              }
             ]
           },
           "noValue": "N/A"
@@ -449,7 +675,9 @@
         "textMode": "auto",
         "wideLayout": true,
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -459,7 +687,12 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 5 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
       "id": 10,
       "panels": [],
       "title": "\ud83c\udf10 Network & Connections",
@@ -470,11 +703,22 @@
       "type": "timeseries",
       "title": "P2P Connections",
       "description": "Incoming and outgoing peer-to-peer connections to the Monero network",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 6 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 6
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "monerod_connections_incoming{instance=~\"$instance\"}",
           "legendFormat": "Incoming",
           "refId": "A",
@@ -482,7 +726,10 @@
           "range": true
         },
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "monerod_connections_outgoing{instance=~\"$instance\"}",
           "legendFormat": "Outgoing",
           "refId": "B",
@@ -492,7 +739,9 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "palette-classic" },
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
             "axisBorderShow": false,
             "axisCenteredZero": false,
@@ -503,43 +752,86 @@
             "drawStyle": "line",
             "fillOpacity": 30,
             "gradientMode": "opacity",
-            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
             "insertNulls": false,
             "lineInterpolation": "smooth",
             "lineWidth": 2,
             "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
+            "scaleDistribution": {
+              "type": "linear"
+            },
             "showPoints": "never",
             "spanNulls": false,
-            "stacking": { "group": "A", "mode": "normal" },
-            "thresholdsStyle": { "mode": "off" }
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null }
+              {
+                "color": "green",
+                "value": null
+              }
             ]
           },
           "unit": "short"
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "Incoming" },
+            "matcher": {
+              "id": "byName",
+              "options": "Incoming"
+            },
             "properties": [
-              { "id": "color", "value": { "fixedColor": "#FF6600", "mode": "fixed" } }
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#FF6600",
+                  "mode": "fixed"
+                }
+              }
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "Outgoing" },
+            "matcher": {
+              "id": "byName",
+              "options": "Outgoing"
+            },
             "properties": [
-              { "id": "color", "value": { "fixedColor": "#3274D9", "mode": "fixed" } }
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#3274D9",
+                  "mode": "fixed"
+                }
+              }
             ]
           }
         ]
       },
       "options": {
-        "legend": { "calcs": ["mean", "lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       }
     },
     {
@@ -547,11 +839,22 @@
       "type": "timeseries",
       "title": "Peerlist Size",
       "description": "White (known good) and grey (untested) peers in the local peerlist",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 6 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 6
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "monerod_white_peerlist_size{instance=~\"$instance\"}",
           "legendFormat": "White (Good)",
           "refId": "A",
@@ -559,7 +862,10 @@
           "range": true
         },
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "monerod_grey_peerlist_size{instance=~\"$instance\"}",
           "legendFormat": "Grey (Untested)",
           "refId": "B",
@@ -569,7 +875,9 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "palette-classic" },
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
             "axisBorderShow": false,
             "axisCenteredZero": false,
@@ -580,43 +888,86 @@
             "drawStyle": "line",
             "fillOpacity": 20,
             "gradientMode": "opacity",
-            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
             "insertNulls": false,
             "lineInterpolation": "smooth",
             "lineWidth": 2,
             "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
+            "scaleDistribution": {
+              "type": "linear"
+            },
             "showPoints": "never",
             "spanNulls": false,
-            "stacking": { "group": "A", "mode": "none" },
-            "thresholdsStyle": { "mode": "off" }
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null }
+              {
+                "color": "green",
+                "value": null
+              }
             ]
           },
           "unit": "short"
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "White (Good)" },
+            "matcher": {
+              "id": "byName",
+              "options": "White (Good)"
+            },
             "properties": [
-              { "id": "color", "value": { "fixedColor": "#73BF69", "mode": "fixed" } }
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#73BF69",
+                  "mode": "fixed"
+                }
+              }
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "Grey (Untested)" },
+            "matcher": {
+              "id": "byName",
+              "options": "Grey (Untested)"
+            },
             "properties": [
-              { "id": "color", "value": { "fixedColor": "#B877D9", "mode": "fixed" } }
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#B877D9",
+                  "mode": "fixed"
+                }
+              }
             ]
           }
         ]
       },
       "options": {
-        "legend": { "calcs": ["mean", "lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       }
     },
     {
@@ -624,11 +975,22 @@
       "type": "timeseries",
       "title": "RPC Connections",
       "description": "Active RPC connections to the monerod JSON-RPC interface",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 6 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 6
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "monerod_rpc_connections{instance=~\"$instance\"}",
           "legendFormat": "RPC Connections",
           "refId": "A",
@@ -638,7 +1000,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "fixedColor": "#FF6600", "mode": "fixed" },
+          "color": {
+            "fixedColor": "#FF6600",
+            "mode": "fixed"
+          },
           "custom": {
             "axisBorderShow": false,
             "axisCenteredZero": false,
@@ -649,21 +1014,35 @@
             "drawStyle": "line",
             "fillOpacity": 30,
             "gradientMode": "opacity",
-            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
             "insertNulls": false,
             "lineInterpolation": "smooth",
             "lineWidth": 2,
             "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
+            "scaleDistribution": {
+              "type": "linear"
+            },
             "showPoints": "never",
             "spanNulls": false,
-            "stacking": { "group": "A", "mode": "none" },
-            "thresholdsStyle": { "mode": "off" }
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "#FF6600", "value": null }
+              {
+                "color": "#FF6600",
+                "value": null
+              }
             ]
           },
           "unit": "short"
@@ -671,13 +1050,29 @@
         "overrides": []
       },
       "options": {
-        "legend": { "calcs": ["mean", "lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       }
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 14
+      },
       "id": 14,
       "panels": [],
       "title": "\ud83d\udce6 Mempool & Transactions",
@@ -688,11 +1083,22 @@
       "type": "timeseries",
       "title": "Mempool Transactions",
       "description": "Number of unconfirmed transactions waiting in the mempool (TX pool)",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 15 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 0,
+        "y": 15
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "monerod_tx_pool_size{instance=~\"$instance\"}",
           "legendFormat": "TX Pool Size",
           "refId": "A",
@@ -702,7 +1108,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "fixedColor": "#FF6600", "mode": "fixed" },
+          "color": {
+            "fixedColor": "#FF6600",
+            "mode": "fixed"
+          },
           "custom": {
             "axisBorderShow": false,
             "axisCenteredZero": false,
@@ -713,21 +1122,35 @@
             "drawStyle": "line",
             "fillOpacity": 30,
             "gradientMode": "opacity",
-            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
             "insertNulls": false,
             "lineInterpolation": "smooth",
             "lineWidth": 2,
             "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
+            "scaleDistribution": {
+              "type": "linear"
+            },
             "showPoints": "never",
             "spanNulls": false,
-            "stacking": { "group": "A", "mode": "none" },
-            "thresholdsStyle": { "mode": "off" }
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "#FF6600", "value": null }
+              {
+                "color": "#FF6600",
+                "value": null
+              }
             ]
           },
           "unit": "short",
@@ -736,8 +1159,19 @@
         "overrides": []
       },
       "options": {
-        "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       }
     },
     {
@@ -745,11 +1179,22 @@
       "type": "timeseries",
       "title": "Mempool Size (Bytes)",
       "description": "Total size of all transactions in the mempool",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 15 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 6,
+        "y": 15
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "monerod_pool_bytes_total{instance=~\"$instance\"}",
           "legendFormat": "Pool Size",
           "refId": "A",
@@ -759,7 +1204,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "fixedColor": "#FF6600", "mode": "fixed" },
+          "color": {
+            "fixedColor": "#FF6600",
+            "mode": "fixed"
+          },
           "custom": {
             "axisBorderShow": false,
             "axisCenteredZero": false,
@@ -770,21 +1218,35 @@
             "drawStyle": "line",
             "fillOpacity": 30,
             "gradientMode": "opacity",
-            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
             "insertNulls": false,
             "lineInterpolation": "smooth",
             "lineWidth": 2,
             "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
+            "scaleDistribution": {
+              "type": "linear"
+            },
             "showPoints": "never",
             "spanNulls": false,
-            "stacking": { "group": "A", "mode": "none" },
-            "thresholdsStyle": { "mode": "off" }
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "#FF6600", "value": null }
+              {
+                "color": "#FF6600",
+                "value": null
+              }
             ]
           },
           "unit": "bytes"
@@ -792,8 +1254,19 @@
         "overrides": []
       },
       "options": {
-        "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       }
     },
     {
@@ -801,11 +1274,22 @@
       "type": "timeseries",
       "title": "Mempool Fees (XMR)",
       "description": "Total fees of all transactions currently in the mempool, converted to XMR",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 15 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 15
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "monerod_pool_fee_total{instance=~\"$instance\"} / 1e12",
           "legendFormat": "Total Fees (XMR)",
           "refId": "A",
@@ -815,7 +1299,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "fixedColor": "#FF6600", "mode": "fixed" },
+          "color": {
+            "fixedColor": "#FF6600",
+            "mode": "fixed"
+          },
           "custom": {
             "axisBorderShow": false,
             "axisCenteredZero": false,
@@ -826,21 +1313,35 @@
             "drawStyle": "line",
             "fillOpacity": 30,
             "gradientMode": "opacity",
-            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
             "insertNulls": false,
             "lineInterpolation": "smooth",
             "lineWidth": 2,
             "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
+            "scaleDistribution": {
+              "type": "linear"
+            },
             "showPoints": "never",
             "spanNulls": false,
-            "stacking": { "group": "A", "mode": "none" },
-            "thresholdsStyle": { "mode": "off" }
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "#FF6600", "value": null }
+              {
+                "color": "#FF6600",
+                "value": null
+              }
             ]
           },
           "unit": "short",
@@ -849,8 +1350,19 @@
         "overrides": []
       },
       "options": {
-        "legend": { "calcs": ["mean", "lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       }
     },
     {
@@ -858,11 +1370,22 @@
       "type": "stat",
       "title": "Fee Per Byte (atomic)",
       "description": "Estimated fee per byte in atomic units (piconero)",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 15 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 15
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "monerod_fee_per_byte_atomic{instance=~\"$instance\"}",
           "legendFormat": "Fee/Byte",
           "refId": "A",
@@ -873,12 +1396,18 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "fixedColor": "#FF6600", "mode": "fixed" },
+          "color": {
+            "fixedColor": "#FF6600",
+            "mode": "fixed"
+          },
           "unit": "short",
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "#FF6600", "value": null }
+              {
+                "color": "#FF6600",
+                "value": null
+              }
             ]
           }
         },
@@ -891,7 +1420,9 @@
         "textMode": "auto",
         "wideLayout": true,
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -901,7 +1432,12 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 23 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 23
+      },
       "id": 19,
       "panels": [],
       "title": "\ud83d\uddd3\ufe0f Last Block",
@@ -912,11 +1448,22 @@
       "type": "timeseries",
       "title": "Block Reward (XMR)",
       "description": "Reward for the most recently mined block, converted from atomic units to XMR",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 24 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 24
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "monerod_last_block_reward{instance=~\"$instance\"} / 1e12",
           "legendFormat": "Block Reward (XMR)",
           "refId": "A",
@@ -926,7 +1473,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "fixedColor": "#FF6600", "mode": "fixed" },
+          "color": {
+            "fixedColor": "#FF6600",
+            "mode": "fixed"
+          },
           "custom": {
             "axisBorderShow": false,
             "axisCenteredZero": false,
@@ -937,21 +1487,35 @@
             "drawStyle": "line",
             "fillOpacity": 25,
             "gradientMode": "opacity",
-            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
             "insertNulls": false,
             "lineInterpolation": "smooth",
             "lineWidth": 2,
             "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
+            "scaleDistribution": {
+              "type": "linear"
+            },
             "showPoints": "never",
             "spanNulls": false,
-            "stacking": { "group": "A", "mode": "none" },
-            "thresholdsStyle": { "mode": "off" }
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "#FF6600", "value": null }
+              {
+                "color": "#FF6600",
+                "value": null
+              }
             ]
           },
           "unit": "short",
@@ -960,8 +1524,19 @@
         "overrides": []
       },
       "options": {
-        "legend": { "calcs": ["mean", "lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       }
     },
     {
@@ -969,11 +1544,22 @@
       "type": "timeseries",
       "title": "Block Size",
       "description": "Size of the most recently mined block in bytes",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 24 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 24
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "monerod_last_block_size_bytes{instance=~\"$instance\"}",
           "legendFormat": "Block Size",
           "refId": "A",
@@ -983,7 +1569,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "fixedColor": "#FF6600", "mode": "fixed" },
+          "color": {
+            "fixedColor": "#FF6600",
+            "mode": "fixed"
+          },
           "custom": {
             "axisBorderShow": false,
             "axisCenteredZero": false,
@@ -994,21 +1583,35 @@
             "drawStyle": "line",
             "fillOpacity": 25,
             "gradientMode": "opacity",
-            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
             "insertNulls": false,
             "lineInterpolation": "smooth",
             "lineWidth": 2,
             "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
+            "scaleDistribution": {
+              "type": "linear"
+            },
             "showPoints": "never",
             "spanNulls": false,
-            "stacking": { "group": "A", "mode": "none" },
-            "thresholdsStyle": { "mode": "off" }
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "#FF6600", "value": null }
+              {
+                "color": "#FF6600",
+                "value": null
+              }
             ]
           },
           "unit": "bytes"
@@ -1016,8 +1619,19 @@
         "overrides": []
       },
       "options": {
-        "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       }
     },
     {
@@ -1025,11 +1639,22 @@
       "type": "timeseries",
       "title": "Transactions per Block",
       "description": "Number of transactions in the most recently mined block",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 24 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 24
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "monerod_last_block_txes{instance=~\"$instance\"}",
           "legendFormat": "TX Count",
           "refId": "A",
@@ -1039,7 +1664,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "fixedColor": "#FF6600", "mode": "fixed" },
+          "color": {
+            "fixedColor": "#FF6600",
+            "mode": "fixed"
+          },
           "custom": {
             "axisBorderShow": false,
             "axisCenteredZero": false,
@@ -1050,21 +1678,35 @@
             "drawStyle": "bars",
             "fillOpacity": 60,
             "gradientMode": "opacity",
-            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
             "insertNulls": false,
             "lineInterpolation": "linear",
             "lineWidth": 1,
             "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
+            "scaleDistribution": {
+              "type": "linear"
+            },
             "showPoints": "never",
             "spanNulls": false,
-            "stacking": { "group": "A", "mode": "none" },
-            "thresholdsStyle": { "mode": "off" }
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "#FF6600", "value": null }
+              {
+                "color": "#FF6600",
+                "value": null
+              }
             ]
           },
           "unit": "short",
@@ -1073,20 +1715,42 @@
         "overrides": []
       },
       "options": {
-        "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       }
     },
     {
       "id": 23,
       "type": "timeseries",
       "title": "Network Difficulty",
-      "description": "Monero network mining difficulty over time — higher values indicate more hash power securing the network",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 32 },
+      "description": "Monero network mining difficulty over time \u2014 higher values indicate more hash power securing the network",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 32
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "monerod_difficulty{instance=~\"$instance\"}",
           "legendFormat": "Difficulty",
           "refId": "A",
@@ -1096,7 +1760,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "fixedColor": "#FF6600", "mode": "fixed" },
+          "color": {
+            "fixedColor": "#FF6600",
+            "mode": "fixed"
+          },
           "custom": {
             "axisBorderShow": false,
             "axisCenteredZero": false,
@@ -1107,21 +1774,35 @@
             "drawStyle": "line",
             "fillOpacity": 15,
             "gradientMode": "scheme",
-            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
             "insertNulls": false,
             "lineInterpolation": "smooth",
             "lineWidth": 2,
             "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
+            "scaleDistribution": {
+              "type": "linear"
+            },
             "showPoints": "never",
             "spanNulls": false,
-            "stacking": { "group": "A", "mode": "none" },
-            "thresholdsStyle": { "mode": "off" }
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "#FF6600", "value": null }
+              {
+                "color": "#FF6600",
+                "value": null
+              }
             ]
           },
           "unit": "short"
@@ -1129,13 +1810,31 @@
         "overrides": []
       },
       "options": {
-        "legend": { "calcs": ["mean", "min", "max", "lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "calcs": [
+            "mean",
+            "min",
+            "max",
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       }
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 40 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 40
+      },
       "id": 24,
       "panels": [],
       "title": "\ud83d\udcbe Blockchain Storage",
@@ -1146,11 +1845,22 @@
       "type": "timeseries",
       "title": "Blockchain DB Size",
       "description": "Size of the Monero LMDB blockchain database on disk",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 41 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 41
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "monerod_database_size_bytes{instance=~\"$instance\"}",
           "legendFormat": "Database Size",
           "refId": "A",
@@ -1160,7 +1870,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "fixedColor": "#FF6600", "mode": "fixed" },
+          "color": {
+            "fixedColor": "#FF6600",
+            "mode": "fixed"
+          },
           "custom": {
             "axisBorderShow": false,
             "axisCenteredZero": false,
@@ -1171,21 +1884,35 @@
             "drawStyle": "line",
             "fillOpacity": 20,
             "gradientMode": "opacity",
-            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
             "insertNulls": false,
             "lineInterpolation": "smooth",
             "lineWidth": 2,
             "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
+            "scaleDistribution": {
+              "type": "linear"
+            },
             "showPoints": "never",
             "spanNulls": false,
-            "stacking": { "group": "A", "mode": "none" },
-            "thresholdsStyle": { "mode": "off" }
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "#FF6600", "value": null }
+              {
+                "color": "#FF6600",
+                "value": null
+              }
             ]
           },
           "unit": "bytes"
@@ -1193,8 +1920,18 @@
         "overrides": []
       },
       "options": {
-        "legend": { "calcs": ["lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       }
     },
     {
@@ -1202,11 +1939,22 @@
       "type": "stat",
       "title": "Free Disk Space (Blockchain)",
       "description": "Free space remaining on the blockchain storage volume as reported by monerod",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 41 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 41
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "monerod_free_space_bytes{instance=~\"$instance\"}",
           "legendFormat": "Free Space",
           "refId": "A",
@@ -1217,14 +1965,25 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "unit": "bytes",
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "#EAB839", "value": 107374182400 },
-              { "color": "green", "value": 214748364800 }
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 107374182400
+              },
+              {
+                "color": "green",
+                "value": 214748364800
+              }
             ]
           }
         },
@@ -1237,7 +1996,9 @@
         "textMode": "auto",
         "wideLayout": true,
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -1248,13 +2009,24 @@
     {
       "id": 27,
       "type": "gauge",
-      "title": "Disk Usage — /mnt/xmrblockchain",
+      "title": "Disk Usage \u2014 /mnt/xmrblockchain",
       "description": "Percentage of disk space used on the blockchain mount point (/mnt/xmrblockchain)",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 41 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 41
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "1 - (node_filesystem_avail_bytes{instance=~\"$instance\",mountpoint=\"/mnt/xmrblockchain\"} / node_filesystem_size_bytes{instance=~\"$instance\",mountpoint=\"/mnt/xmrblockchain\"})",
           "legendFormat": "Used %",
           "refId": "A",
@@ -1265,17 +2037,31 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "unit": "percentunit",
           "min": 0,
           "max": 1,
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "#EAB839", "value": 0.7 },
-              { "color": "orange", "value": 0.85 },
-              { "color": "red", "value": 0.95 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 0.7
+              },
+              {
+                "color": "orange",
+                "value": 0.85
+              },
+              {
+                "color": "red",
+                "value": 0.95
+              }
             ]
           }
         },
@@ -1287,7 +2073,9 @@
         "showThresholdLabels": false,
         "showThresholdMarkers": true,
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -1296,7 +2084,12 @@
     },
     {
       "collapsed": false,
-      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 49 },
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 49
+      },
       "id": 28,
       "panels": [],
       "title": "\ud83d\udda5\ufe0f System Resources (PiNodeXMR)",
@@ -1307,11 +2100,22 @@
       "type": "gauge",
       "title": "CPU Temperature",
       "description": "SoC / CPU temperature of the PiNodeXMR device",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 8, "w": 4, "x": 0, "y": 50 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 4,
+        "x": 0,
+        "y": 50
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "pinodexmr_cpu_temp_celsius{instance=~\"$instance\"}",
           "legendFormat": "CPU Temp",
           "refId": "A",
@@ -1322,17 +2126,31 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "thresholds" },
+          "color": {
+            "mode": "thresholds"
+          },
           "unit": "celsius",
           "min": 0,
           "max": 100,
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null },
-              { "color": "yellow", "value": 60 },
-              { "color": "orange", "value": 75 },
-              { "color": "red", "value": 85 }
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 60
+              },
+              {
+                "color": "orange",
+                "value": 75
+              },
+              {
+                "color": "red",
+                "value": 85
+              }
             ]
           }
         },
@@ -1344,7 +2162,9 @@
         "showThresholdLabels": true,
         "showThresholdMarkers": true,
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "fields": "",
           "values": false
         },
@@ -1356,11 +2176,22 @@
       "type": "timeseries",
       "title": "CPU Usage %",
       "description": "Overall CPU utilisation across all cores",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 8, "w": 4, "x": 4, "y": 50 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 4,
+        "x": 4,
+        "y": 50
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "100 - (avg(rate(node_cpu_seconds_total{instance=~\"$instance\",mode=\"idle\"}[5m])) * 100)",
           "legendFormat": "CPU Usage %",
           "refId": "A",
@@ -1370,7 +2201,10 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "fixedColor": "#FF6600", "mode": "fixed" },
+          "color": {
+            "fixedColor": "#FF6600",
+            "mode": "fixed"
+          },
           "custom": {
             "axisBorderShow": false,
             "axisCenteredZero": false,
@@ -1381,22 +2215,39 @@
             "drawStyle": "line",
             "fillOpacity": 30,
             "gradientMode": "opacity",
-            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
             "insertNulls": false,
             "lineInterpolation": "smooth",
             "lineWidth": 2,
             "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
+            "scaleDistribution": {
+              "type": "linear"
+            },
             "showPoints": "never",
             "spanNulls": false,
-            "stacking": { "group": "A", "mode": "none" },
-            "thresholdsStyle": { "mode": "line+area" }
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line+area"
+            }
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "transparent", "value": null },
-              { "color": "red", "value": 90 }
+              {
+                "color": "transparent",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
             ]
           },
           "unit": "percent",
@@ -1406,20 +2257,42 @@
         "overrides": []
       },
       "options": {
-        "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       }
     },
     {
       "id": 31,
       "type": "timeseries",
       "title": "Memory Usage",
-      "description": "RAM utilisation — used vs. available memory",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 8, "w": 4, "x": 8, "y": 50 },
+      "description": "RAM utilisation \u2014 used vs. available memory",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 4,
+        "x": 8,
+        "y": 50
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "node_memory_MemTotal_bytes{instance=~\"$instance\"} - node_memory_MemAvailable_bytes{instance=~\"$instance\"}",
           "legendFormat": "Used",
           "refId": "A",
@@ -1427,7 +2300,10 @@
           "range": true
         },
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "node_memory_MemAvailable_bytes{instance=~\"$instance\"}",
           "legendFormat": "Available",
           "refId": "B",
@@ -1437,7 +2313,9 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "palette-classic" },
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
             "axisBorderShow": false,
             "axisCenteredZero": false,
@@ -1448,21 +2326,35 @@
             "drawStyle": "line",
             "fillOpacity": 30,
             "gradientMode": "opacity",
-            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
             "insertNulls": false,
             "lineInterpolation": "smooth",
             "lineWidth": 2,
             "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
+            "scaleDistribution": {
+              "type": "linear"
+            },
             "showPoints": "never",
             "spanNulls": false,
-            "stacking": { "group": "A", "mode": "normal" },
-            "thresholdsStyle": { "mode": "off" }
+            "stacking": {
+              "group": "A",
+              "mode": "normal"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null }
+              {
+                "color": "green",
+                "value": null
+              }
             ]
           },
           "unit": "bytes",
@@ -1470,34 +2362,74 @@
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "Used" },
+            "matcher": {
+              "id": "byName",
+              "options": "Used"
+            },
             "properties": [
-              { "id": "color", "value": { "fixedColor": "#FF6600", "mode": "fixed" } }
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#FF6600",
+                  "mode": "fixed"
+                }
+              }
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "Available" },
+            "matcher": {
+              "id": "byName",
+              "options": "Available"
+            },
             "properties": [
-              { "id": "color", "value": { "fixedColor": "#73BF69", "mode": "fixed" } }
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#73BF69",
+                  "mode": "fixed"
+                }
+              }
             ]
           }
         ]
       },
       "options": {
-        "legend": { "calcs": ["mean", "lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       }
     },
     {
       "id": 32,
       "type": "timeseries",
       "title": "System Load",
-      "description": "System load averages (1m, 5m, 15m) — compare against 4 CPU cores",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 8, "w": 4, "x": 12, "y": 50 },
+      "description": "System load averages (1m, 5m, 15m) \u2014 compare against 4 CPU cores",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 4,
+        "x": 12,
+        "y": 50
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "node_load1{instance=~\"$instance\"}",
           "legendFormat": "1m",
           "refId": "A",
@@ -1505,7 +2437,10 @@
           "range": true
         },
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "node_load5{instance=~\"$instance\"}",
           "legendFormat": "5m",
           "refId": "B",
@@ -1513,7 +2448,10 @@
           "range": true
         },
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "node_load15{instance=~\"$instance\"}",
           "legendFormat": "15m",
           "refId": "C",
@@ -1523,7 +2461,9 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "palette-classic" },
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
             "axisBorderShow": false,
             "axisCenteredZero": false,
@@ -1534,22 +2474,39 @@
             "drawStyle": "line",
             "fillOpacity": 10,
             "gradientMode": "none",
-            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
             "insertNulls": false,
             "lineInterpolation": "smooth",
             "lineWidth": 2,
             "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
+            "scaleDistribution": {
+              "type": "linear"
+            },
             "showPoints": "never",
             "spanNulls": false,
-            "stacking": { "group": "A", "mode": "none" },
-            "thresholdsStyle": { "mode": "line" }
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "line"
+            }
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "transparent", "value": null },
-              { "color": "red", "value": 4 }
+              {
+                "color": "transparent",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 4
+              }
             ]
           },
           "unit": "short",
@@ -1557,28 +2514,66 @@
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "1m" },
+            "matcher": {
+              "id": "byName",
+              "options": "1m"
+            },
             "properties": [
-              { "id": "color", "value": { "fixedColor": "#FF6600", "mode": "fixed" } }
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#FF6600",
+                  "mode": "fixed"
+                }
+              }
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "5m" },
+            "matcher": {
+              "id": "byName",
+              "options": "5m"
+            },
             "properties": [
-              { "id": "color", "value": { "fixedColor": "#FADE2A", "mode": "fixed" } }
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#FADE2A",
+                  "mode": "fixed"
+                }
+              }
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "15m" },
+            "matcher": {
+              "id": "byName",
+              "options": "15m"
+            },
             "properties": [
-              { "id": "color", "value": { "fixedColor": "#3274D9", "mode": "fixed" } }
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#3274D9",
+                  "mode": "fixed"
+                }
+              }
             ]
           }
         ]
       },
       "options": {
-        "legend": { "calcs": ["mean", "lastNotNull"], "displayMode": "table", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "calcs": [
+            "mean",
+            "lastNotNull"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       }
     },
     {
@@ -1586,11 +2581,22 @@
       "type": "timeseries",
       "title": "Network Traffic (eth0)",
       "description": "Ethernet receive and transmit throughput",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 8, "w": 4, "x": 16, "y": 50 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 4,
+        "x": 16,
+        "y": 50
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "rate(node_network_receive_bytes_total{instance=~\"$instance\",device=\"eth0\"}[5m])",
           "legendFormat": "Receive",
           "refId": "A",
@@ -1598,7 +2604,10 @@
           "range": true
         },
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "rate(node_network_transmit_bytes_total{instance=~\"$instance\",device=\"eth0\"}[5m])",
           "legendFormat": "Transmit",
           "refId": "B",
@@ -1608,7 +2617,9 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "palette-classic" },
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
             "axisBorderShow": false,
             "axisCenteredZero": false,
@@ -1619,43 +2630,86 @@
             "drawStyle": "line",
             "fillOpacity": 20,
             "gradientMode": "opacity",
-            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
             "insertNulls": false,
             "lineInterpolation": "smooth",
             "lineWidth": 2,
             "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
+            "scaleDistribution": {
+              "type": "linear"
+            },
             "showPoints": "never",
             "spanNulls": false,
-            "stacking": { "group": "A", "mode": "none" },
-            "thresholdsStyle": { "mode": "off" }
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null }
+              {
+                "color": "green",
+                "value": null
+              }
             ]
           },
           "unit": "Bps"
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "Receive" },
+            "matcher": {
+              "id": "byName",
+              "options": "Receive"
+            },
             "properties": [
-              { "id": "color", "value": { "fixedColor": "#73BF69", "mode": "fixed" } }
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#73BF69",
+                  "mode": "fixed"
+                }
+              }
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "Transmit" },
+            "matcher": {
+              "id": "byName",
+              "options": "Transmit"
+            },
             "properties": [
-              { "id": "color", "value": { "fixedColor": "#FF6600", "mode": "fixed" } }
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#FF6600",
+                  "mode": "fixed"
+                }
+              }
             ]
           }
         ]
       },
       "options": {
-        "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       }
     },
     {
@@ -1663,11 +2717,22 @@
       "type": "timeseries",
       "title": "Disk I/O (Blockchain SSD)",
       "description": "Read and write throughput on the blockchain storage device (sda)",
-      "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
-      "gridPos": { "h": 8, "w": 4, "x": 20, "y": 50 },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 4,
+        "x": 20,
+        "y": 50
+      },
       "targets": [
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "rate(node_disk_read_bytes_total{instance=~\"$instance\",device=\"sda\"}[5m])",
           "legendFormat": "Read",
           "refId": "A",
@@ -1675,7 +2740,10 @@
           "range": true
         },
         {
-          "datasource": { "type": "prometheus", "uid": "PBFA97CFB590B2093" },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${DS_PROMETHEUS}"
+          },
           "expr": "rate(node_disk_written_bytes_total{instance=~\"$instance\",device=\"sda\"}[5m])",
           "legendFormat": "Write",
           "refId": "B",
@@ -1685,7 +2753,9 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "color": { "mode": "palette-classic" },
+          "color": {
+            "mode": "palette-classic"
+          },
           "custom": {
             "axisBorderShow": false,
             "axisCenteredZero": false,
@@ -1696,60 +2766,110 @@
             "drawStyle": "line",
             "fillOpacity": 20,
             "gradientMode": "opacity",
-            "hideFrom": { "legend": false, "tooltip": false, "viz": false },
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
             "insertNulls": false,
             "lineInterpolation": "smooth",
             "lineWidth": 2,
             "pointSize": 5,
-            "scaleDistribution": { "type": "linear" },
+            "scaleDistribution": {
+              "type": "linear"
+            },
             "showPoints": "never",
             "spanNulls": false,
-            "stacking": { "group": "A", "mode": "none" },
-            "thresholdsStyle": { "mode": "off" }
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "green", "value": null }
+              {
+                "color": "green",
+                "value": null
+              }
             ]
           },
           "unit": "Bps"
         },
         "overrides": [
           {
-            "matcher": { "id": "byName", "options": "Read" },
+            "matcher": {
+              "id": "byName",
+              "options": "Read"
+            },
             "properties": [
-              { "id": "color", "value": { "fixedColor": "#3274D9", "mode": "fixed" } }
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#3274D9",
+                  "mode": "fixed"
+                }
+              }
             ]
           },
           {
-            "matcher": { "id": "byName", "options": "Write" },
+            "matcher": {
+              "id": "byName",
+              "options": "Write"
+            },
             "properties": [
-              { "id": "color", "value": { "fixedColor": "#FF6600", "mode": "fixed" } }
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "#FF6600",
+                  "mode": "fixed"
+                }
+              }
             ]
           }
         ]
       },
       "options": {
-        "legend": { "calcs": ["mean", "max"], "displayMode": "table", "placement": "bottom", "showLegend": true },
-        "tooltip": { "mode": "multi", "sort": "desc" }
+        "legend": {
+          "calcs": [
+            "mean",
+            "max"
+          ],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       }
     }
   ],
   "refresh": "30s",
   "schemaVersion": 40,
-  "tags": ["monero", "xmr", "pinodexmr", "cryptocurrency", "blockchain", "raspberry-pi"],
+  "tags": [
+    "monero",
+    "xmr",
+    "pinodexmr",
+    "cryptocurrency",
+    "blockchain",
+    "raspberry-pi"
+  ],
   "templating": {
     "list": [
       {
         "current": {
-          "selected": true,
-          "text": "192.168.208.10:9100",
-          "value": "192.168.208.10:9100"
+          "selected": false,
+          "text": "",
+          "value": ""
         },
         "datasource": {
           "type": "prometheus",
-          "uid": "PBFA97CFB590B2093"
+          "uid": "${DS_PROMETHEUS}"
         },
         "definition": "label_values(monerod_up, instance)",
         "hide": 0,
@@ -1776,8 +2896,29 @@
     "to": "now"
   },
   "timepicker": {
-    "refresh_intervals": ["5s", "10s", "30s", "1m", "5m", "15m", "30m", "1h", "2h", "1d"],
-    "time_options": ["5m", "15m", "1h", "6h", "12h", "24h", "2d", "7d", "30d"]
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "1d"
+    ],
+    "time_options": [
+      "5m",
+      "15m",
+      "1h",
+      "6h",
+      "12h",
+      "24h",
+      "2d",
+      "7d",
+      "30d"
+    ]
   },
   "timezone": "",
   "title": "PiNodeXMR - Monero Node Monitor",

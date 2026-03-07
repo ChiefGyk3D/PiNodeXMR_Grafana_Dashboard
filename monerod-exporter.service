@@ -1,6 +1,6 @@
 [Unit]
 Description=Monerod Prometheus Metrics Exporter
-Documentation=https://github.com/chiefgyk3d/pinodexmr-dashboard
+Documentation=https://github.com/ChiefGyk3D/PiNodeXMR_Grafana_Dashboard
 After=network-online.target moneroStatus.service
 Wants=network-online.target
 
