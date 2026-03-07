@@ -1,0 +1,23 @@
+[Unit]
+Description=Monerod Prometheus Metrics Exporter
+Documentation=https://github.com/chiefgyk3d/pinodexmr-dashboard
+After=network-online.target moneroStatus.service
+Wants=network-online.target
+
+[Service]
+User=pinodexmr
+Group=pinodexmr
+Type=simple
+ExecStart=/bin/bash /home/pinodexmr/monerod-exporter.sh
+Restart=always
+RestartSec=10
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/node_exporter/textfile_collector
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
