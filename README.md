@@ -515,6 +515,13 @@ Contributions are welcome! Please:
 - Grafana dashboard screenshots for the README
 - Support for non-PiNodeXMR monerod installations
 
+## Related Projects
+
+| Repository | Description |
+|-----------|-------------|
+| [siem-docker-stack](https://github.com/ChiefGyk3D/siem-docker-stack) | Dockerized SIEM/SOC stack with hot/warm tiering (OpenSearch, Wazuh, Grafana, Logstash, Prometheus) |
+| [pfsense_siem_stack](https://github.com/ChiefGyk3D/pfsense_siem_stack) | pfSense-side SIEM integration (Suricata, Telegraf, pfBlockerNG, 30+ docs) |
+
 ## License
 
 This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
