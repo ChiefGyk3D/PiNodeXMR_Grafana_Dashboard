@@ -541,12 +541,8 @@ If you find this PiNodeXMR Grafana Dashboard useful, consider supporting develop
 <div align="center">
   <table>
     <tr>
-      <td align="center"><a href="https://patreon.com/chiefgyk3d?utm_medium=unknown&utm_source=join_link&utm_campaign=creatorshare_creator&utm_content=copyLink" title="Patreon"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/patreon.svg" width="32" height="32" alt="Patreon"/></a></td>
-      <td align="center"><a href="https://streamelements.com/chiefgyk3d/tip" title="StreamElements"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/streamelements.svg" width="32" height="32" alt="StreamElements"/></a></td>
-    </tr>
-    <tr>
-      <td align="center">Patreon</td>
-      <td align="center">StreamElements</td>
+      <td align="center"><a href="https://patreon.com/chiefgyk3d?utm_medium=unknown&utm_source=join_link&utm_campaign=creatorshare_creator&utm_content=copyLink" title="Patreon"><img src="https://img.shields.io/badge/Patreon-F96854?style=for-the-badge&logo=patreon&logoColor=white" alt="Patreon"/></a></td>
+      <td align="center"><a href="https://streamelements.com/chiefgyk3d/tip" title="StreamElements"><img src="https://img.shields.io/badge/StreamElements-Tip-7B68EE?style=for-the-badge" alt="StreamElements"/></a></td>
     </tr>
   </table>
 </div>
@@ -557,29 +553,26 @@ If you find this PiNodeXMR Grafana Dashboard useful, consider supporting develop
   <table style="border:none;">
     <tr>
       <td align="center" style="padding:8px; min-width:120px;">
-        <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/bitcoin.svg" width="28" height="28" alt="Bitcoin"/>
+        <img src="https://img.shields.io/badge/Bitcoin-F7931A?style=for-the-badge&logo=bitcoin&logoColor=white" alt="Bitcoin"/>
       </td>
       <td align="left" style="padding:8px;">
-        <b>Bitcoin</b><br/>
-        <code style="font-size:12px;">bc1qztdzcy2wyavj2tsuandu4p0tcklzttvdnzalla</code>
+        <code>bc1qztdzcy2wyavj2tsuandu4p0tcklzttvdnzalla</code>
       </td>
     </tr>
     <tr>
       <td align="center" style="padding:8px; min-width:120px;">
-        <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/monero.svg" width="28" height="28" alt="Monero"/>
+        <img src="https://img.shields.io/badge/Monero-FF6600?style=for-the-badge&logo=monero&logoColor=white" alt="Monero"/>
       </td>
       <td align="left" style="padding:8px;">
-        <b>Monero</b><br/>
-        <code style="font-size:12px;">84Y34QubRwQYK2HNviezeH9r6aRcPvgWmKtDkN3EwiuVbp6sNLhm9ffRgs6BA9X1n9jY7wEN16ZEpiEngZbecXseUrW8SeQ</code>
+        <code>84Y34QubRwQYK2HNviezeH9r6aRcPvgWmKtDkN3EwiuVbp6sNLhm9ffRgs6BA9X1n9jY7wEN16ZEpiEngZbecXseUrW8SeQ</code>
       </td>
     </tr>
     <tr>
       <td align="center" style="padding:8px; min-width:120px;">
-        <img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/ethereum.svg" width="28" height="28" alt="Ethereum"/>
+        <img src="https://img.shields.io/badge/Ethereum-3C3C3D?style=for-the-badge&logo=ethereum&logoColor=white" alt="Ethereum"/>
       </td>
       <td align="left" style="padding:8px;">
-        <b>Ethereum</b><br/>
-        <code style="font-size:12px;">0x554f18cfB684889c3A60219BDBE7b050C39335ED</code>
+        <code>0x554f18cfB684889c3A60219BDBE7b050C39335ED</code>
       </td>
     </tr>
   </table>
@@ -593,27 +586,13 @@ Made with ❤️ by [ChiefGyk3D](https://github.com/ChiefGyk3D)
 
 ## Author & Socials
 
-<table>
-  <tr>
-    <td align="center"><a href="https://social.chiefgyk3d.com/@chiefgyk3d" title="Mastodon"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/mastodon.svg" width="32" height="32" alt="Mastodon"/></a></td>
-    <td align="center"><a href="https://bsky.app/profile/chiefgyk3d.com" title="Bluesky"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/bluesky.svg" width="32" height="32" alt="Bluesky"/></a></td>
-    <td align="center"><a href="http://twitch.tv/chiefgyk3d" title="Twitch"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/twitch.svg" width="32" height="32" alt="Twitch"/></a></td>
-    <td align="center"><a href="https://www.youtube.com/channel/UCvFY4KyqVBuYd7JAl3NRyiQ" title="YouTube"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/youtube.svg" width="32" height="32" alt="YouTube"/></a></td>
-    <td align="center"><a href="https://kick.com/chiefgyk3d" title="Kick"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/kick.svg" width="32" height="32" alt="Kick"/></a></td>
-    <td align="center"><a href="https://www.tiktok.com/@chiefgyk3d" title="TikTok"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/tiktok.svg" width="32" height="32" alt="TikTok"/></a></td>
-    <td align="center"><a href="https://discord.chiefgyk3d.com" title="Discord"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/discord.svg" width="32" height="32" alt="Discord"/></a></td>
-    <td align="center"><a href="https://matrix-invite.chiefgyk3d.com" title="Matrix"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/matrix.svg" width="32" height="32" alt="Matrix"/></a></td>
-  </tr>
-  <tr>
-    <td align="center">Mastodon</td>
-    <td align="center">Bluesky</td>
-    <td align="center">Twitch</td>
-    <td align="center">YouTube</td>
-    <td align="center">Kick</td>
-    <td align="center">TikTok</td>
-    <td align="center">Discord</td>
-    <td align="center">Matrix</td>
-  </tr>
-</table>
+<a href="https://social.chiefgyk3d.com/@chiefgyk3d"><img src="https://img.shields.io/badge/Mastodon-6364FF?style=for-the-badge&logo=mastodon&logoColor=white" alt="Mastodon"/></a>
+<a href="https://bsky.app/profile/chiefgyk3d.com"><img src="https://img.shields.io/badge/Bluesky-0285FF?style=for-the-badge&logo=bluesky&logoColor=white" alt="Bluesky"/></a>
+<a href="http://twitch.tv/chiefgyk3d"><img src="https://img.shields.io/badge/Twitch-9146FF?style=for-the-badge&logo=twitch&logoColor=white" alt="Twitch"/></a>
+<a href="https://www.youtube.com/channel/UCvFY4KyqVBuYd7JAl3NRyiQ"><img src="https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="YouTube"/></a>
+<a href="https://kick.com/chiefgyk3d"><img src="https://img.shields.io/badge/Kick-53FC18?style=for-the-badge&logo=kick&logoColor=black" alt="Kick"/></a>
+<a href="https://www.tiktok.com/@chiefgyk3d"><img src="https://img.shields.io/badge/TikTok-000000?style=for-the-badge&logo=tiktok&logoColor=white" alt="TikTok"/></a>
+<a href="https://discord.chiefgyk3d.com"><img src="https://img.shields.io/badge/Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white" alt="Discord"/></a>
+<a href="https://matrix-invite.chiefgyk3d.com"><img src="https://img.shields.io/badge/Matrix-000000?style=for-the-badge&logo=matrix&logoColor=white" alt="Matrix"/></a>
 
 </div>
