@@ -11,6 +11,9 @@ Type=simple
 ExecStart=/bin/bash /home/pinodexmr/monerod-exporter.sh
 Restart=always
 RestartSec=10
+# Limit rapid restart loops: max 5 restarts in 10 minutes
+StartLimitIntervalSec=600
+StartLimitBurst=5
 
 # Hardening
 NoNewPrivileges=true

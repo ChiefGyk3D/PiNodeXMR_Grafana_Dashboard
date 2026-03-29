@@ -7,57 +7,77 @@
 # Textfile dir: /var/lib/node_exporter/textfile_collector/
 # Service:      monerod-exporter.service
 
-set -euo pipefail
+set -uo pipefail
 
-# --- Configuration (sourced from PiNodeXMR variables) ---
-source /home/pinodexmr/variables/RPCu.sh
-source /home/pinodexmr/variables/RPCp.sh
-source /home/pinodexmr/variables/monero-port.sh
-DEVICE_IP="$(hostname -I | awk '{print $1}')"
-
+# --- Configuration ---
 TEXTFILE_DIR="/var/lib/node_exporter/textfile_collector"
 PROM_FILE="${TEXTFILE_DIR}/monerod.prom"
 TEMP_FILE="${TEXTFILE_DIR}/monerod.prom.tmp"
 INTERVAL=30
+MAX_CONSECUTIVE_FAILURES=3   # Exit after this many failures (~30s) for systemd restart
+FAILURE_SLEEP=10             # Seconds to sleep between failure retries (instead of full interval)
 
 # --- Ensure textfile directory exists ---
 mkdir -p "${TEXTFILE_DIR}"
+
+# --- Health check: consecutive failure counter ---
+FAIL_COUNT=0
+
+
+load_config() {
+    # Re-source variables each iteration so credential/port changes are picked up
+    source /home/pinodexmr/variables/RPCu.sh
+    source /home/pinodexmr/variables/RPCp.sh
+    source /home/pinodexmr/variables/monero-port.sh
+    DEVICE_IP="$(hostname -I | awk '{print $1}')"
+}
 
 write_metrics() {
     local rpc_url="http://${DEVICE_IP}:${MONERO_PORT}/json_rpc"
 
     # Query get_info
     local info
-    info=$(curl -sf -u "${RPCu}:${RPCp}" --digest -X POST "${rpc_url}" \
+    info=$(curl -sf --max-time 10 -u "${RPCu}:${RPCp}" --digest -X POST "${rpc_url}" \
         -d '{"jsonrpc":"2.0","id":"0","method":"get_info"}' \
         -H 'Content-Type: application/json' 2>/dev/null) || {
         echo "# monerod RPC unreachable at $(date -Iseconds)" > "${TEMP_FILE}"
         echo "monerod_up 0" >> "${TEMP_FILE}"
+        echo "monerod_exporter_consecutive_failures ${FAIL_COUNT}" >> "${TEMP_FILE}"
         mv "${TEMP_FILE}" "${PROM_FILE}"
         return 1
     }
 
+    # Validate JSON — guard against partial responses during monerod startup
+    if ! echo "${info}" | jq -e '.result' > /dev/null 2>&1; then
+        echo "monerod-exporter: Invalid/partial JSON from RPC at $(date -Iseconds), treating as failure" >&2
+        echo "# monerod RPC returned invalid JSON at $(date -Iseconds)" > "${TEMP_FILE}"
+        echo "monerod_up 0" >> "${TEMP_FILE}"
+        echo "monerod_exporter_consecutive_failures ${FAIL_COUNT}" >> "${TEMP_FILE}"
+        mv "${TEMP_FILE}" "${PROM_FILE}"
+        return 1
+    fi
+
     # Query get_fee_estimate
     local fees
-    fees=$(curl -sf -u "${RPCu}:${RPCp}" --digest -X POST "${rpc_url}" \
+    fees=$(curl -sf --max-time 10 -u "${RPCu}:${RPCp}" --digest -X POST "${rpc_url}" \
         -d '{"jsonrpc":"2.0","id":"0","method":"get_fee_estimate"}' \
         -H 'Content-Type: application/json' 2>/dev/null) || fees='{}'
 
     # Query transaction pool stats
     local pool
-    pool=$(curl -sf -u "${RPCu}:${RPCp}" --digest \
+    pool=$(curl -sf --max-time 10 -u "${RPCu}:${RPCp}" --digest \
         "http://${DEVICE_IP}:${MONERO_PORT}/get_transaction_pool_stats" \
         -H 'Content-Type: application/json' 2>/dev/null) || pool='{}'
 
     # Query hard_fork_info
     local hfork
-    hfork=$(curl -sf -u "${RPCu}:${RPCp}" --digest -X POST "${rpc_url}" \
+    hfork=$(curl -sf --max-time 10 -u "${RPCu}:${RPCp}" --digest -X POST "${rpc_url}" \
         -d '{"jsonrpc":"2.0","id":"0","method":"hard_fork_info"}' \
         -H 'Content-Type: application/json' 2>/dev/null) || hfork='{}'
 
     # Query get_last_block_header
     local lastblock
-    lastblock=$(curl -sf -u "${RPCu}:${RPCp}" --digest -X POST "${rpc_url}" \
+    lastblock=$(curl -sf --max-time 10 -u "${RPCu}:${RPCp}" --digest -X POST "${rpc_url}" \
         -d '{"jsonrpc":"2.0","id":"0","method":"get_last_block_header"}' \
         -H 'Content-Type: application/json' 2>/dev/null) || lastblock='{}'
 
@@ -258,16 +278,34 @@ monerod_last_block_timestamp ${block_timestamp}
 # HELP pinodexmr_cpu_temp_celsius SoC temperature of the PiNodeXMR device.
 # TYPE pinodexmr_cpu_temp_celsius gauge
 pinodexmr_cpu_temp_celsius ${cpu_temp}
+
+# HELP monerod_exporter_consecutive_failures Number of consecutive RPC failures before last success.
+# TYPE monerod_exporter_consecutive_failures gauge
+monerod_exporter_consecutive_failures 0
 EOF
 
     # Atomic move to prevent partial reads
     mv "${TEMP_FILE}" "${PROM_FILE}"
 }
 
-# --- Main loop ---
-echo "monerod-exporter: Starting (interval=${INTERVAL}s, RPC=${DEVICE_IP}:${MONERO_PORT})"
+# --- Main loop with self-healing ---
+load_config
+echo "monerod-exporter: Starting (interval=${INTERVAL}s, RPC=${DEVICE_IP}:${MONERO_PORT}, max_failures=${MAX_CONSECUTIVE_FAILURES})"
 
 while true; do
-    write_metrics || echo "monerod-exporter: RPC query failed at $(date -Iseconds)" >&2
-    sleep "${INTERVAL}"
+    # Re-source config each iteration to pick up credential/port changes
+    load_config
+
+    if write_metrics; then
+        FAIL_COUNT=0
+        sleep "${INTERVAL}"
+    else
+        FAIL_COUNT=$((FAIL_COUNT + 1))
+        echo "monerod-exporter: RPC query failed at $(date -Iseconds) (failure ${FAIL_COUNT}/${MAX_CONSECUTIVE_FAILURES})" >&2
+        if [ "${FAIL_COUNT}" -ge "${MAX_CONSECUTIVE_FAILURES}" ]; then
+            echo "monerod-exporter: ${MAX_CONSECUTIVE_FAILURES} consecutive failures, exiting for systemd restart" >&2
+            exit 1
+        fi
+        sleep "${FAILURE_SLEEP}"  # Short retry on failure instead of full interval
+    fi
 done
