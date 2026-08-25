@@ -1,0 +1,31 @@
+[Unit]
+Description=Prometheus Time Series Database (PiNodeXMR monitoring)
+Documentation=https://prometheus.io/docs/introduction/overview/
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=prometheus
+Group=prometheus
+Type=simple
+ExecStart=/usr/local/bin/prometheus \
+    --config.file=/etc/prometheus/prometheus.yml \
+    --storage.tsdb.path=@@DATA_DIR@@ \
+    --storage.tsdb.retention.time=@@RETENTION@@ \
+    --storage.tsdb.retention.size=@@RETENTION_SIZE@@ \
+    --web.listen-address=@@BIND@@:@@PORT@@ \
+    --web.enable-lifecycle
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+TimeoutStopSec=30
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=@@DATA_DIR@@
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

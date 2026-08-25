@@ -1,0 +1,30 @@
+[Unit]
+Description=Monerod Prometheus Metrics Exporter (PiNodeXMR)
+Documentation=https://github.com/ChiefGyk3D/PiNodeXMR_Grafana_Dashboard
+After=network-online.target moneroStatus.service
+Wants=network-online.target
+
+[Service]
+User=@@EXPORTER_USER@@
+Group=@@EXPORTER_GROUP@@
+Type=simple
+ExecStart=/bin/bash @@EXPORTER_PATH@@
+Restart=always
+RestartSec=10
+# Limit rapid restart loops: max 5 restarts in 10 minutes.
+StartLimitIntervalSec=600
+StartLimitBurst=5
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=@@TEXTFILE_DIR@@
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

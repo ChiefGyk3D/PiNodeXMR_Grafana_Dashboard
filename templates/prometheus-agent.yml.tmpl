@@ -1,0 +1,34 @@
+# Prometheus Agent configuration for a PiNodeXMR reporting to a remote stack.
+# Agent mode keeps no local TSDB: it scrapes and forwards over remote_write,
+# so this works from behind NAT/CGNAT with no inbound ports opened.
+
+global:
+  scrape_interval: @@SCRAPE_INTERVAL@@
+  external_labels:
+    monitor: pinodexmr
+    instance_name: '@@INSTANCE_NAME@@'
+
+scrape_configs:
+  - job_name: node
+    static_configs:
+      - targets: ['@@NODE_EXPORTER_TARGET@@']
+        labels:
+          role: 'crypto-node'
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: '@@INSTANCE_NAME@@'
+
+remote_write:
+  - url: '@@REMOTE_WRITE_URL@@'
+@@REMOTE_WRITE_AUTH_BLOCK@@
+    queue_config:
+      # Tuned for a small SBC on a possibly flaky home connection: hold a
+      # modest buffer and back off rather than hammering the receiver.
+      capacity: 2500
+      max_shards: 10
+      min_shards: 1
+      max_samples_per_send: 500
+      batch_send_deadline: 5s
+      min_backoff: 30ms
+      max_backoff: 5s

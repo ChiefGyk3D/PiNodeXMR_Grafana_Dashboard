@@ -1,0 +1,17 @@
+# Grafana dashboard provisioning — loads the PiNodeXMR dashboard from disk on
+# startup, so no manual "Import JSON" step is needed.
+
+apiVersion: 1
+
+providers:
+  - name: pinodexmr
+    orgId: 1
+    folder: 'PiNodeXMR'
+    type: file
+    disableDeletion: false
+    # Allow edits in the UI; they persist until the next provisioning reload.
+    allowUiUpdates: true
+    updateIntervalSeconds: 60
+    options:
+      path: @@DASHBOARD_DIR@@
+      foldersFromFilesStructure: false

@@ -112,7 +112,7 @@
       },
       "id": 1,
       "panels": [],
-      "title": "\u26a1 Monero Node Status",
+      "title": "⚡ Monero Node Status",
       "type": "row"
     },
     {
@@ -695,7 +695,7 @@
       },
       "id": 10,
       "panels": [],
-      "title": "\ud83c\udf10 Network & Connections",
+      "title": "🌐 Network & Connections",
       "type": "row"
     },
     {
@@ -1075,7 +1075,7 @@
       },
       "id": 14,
       "panels": [],
-      "title": "\ud83d\udce6 Mempool & Transactions",
+      "title": "📦 Mempool & Transactions",
       "type": "row"
     },
     {
@@ -1440,7 +1440,7 @@
       },
       "id": 19,
       "panels": [],
-      "title": "\ud83d\uddd3\ufe0f Last Block",
+      "title": "🗓️ Last Block",
       "type": "row"
     },
     {
@@ -1734,7 +1734,7 @@
       "id": 23,
       "type": "timeseries",
       "title": "Network Difficulty",
-      "description": "Monero network mining difficulty over time \u2014 higher values indicate more hash power securing the network",
+      "description": "Monero network mining difficulty over time — higher values indicate more hash power securing the network",
       "datasource": {
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
@@ -1837,7 +1837,7 @@
       },
       "id": 24,
       "panels": [],
-      "title": "\ud83d\udcbe Blockchain Storage",
+      "title": "💾 Blockchain Storage",
       "type": "row"
     },
     {
@@ -2009,8 +2009,8 @@
     {
       "id": 27,
       "type": "gauge",
-      "title": "Disk Usage \u2014 /mnt/xmrblockchain",
-      "description": "Percentage of disk space used on the blockchain mount point (/mnt/xmrblockchain)",
+      "title": "Disk Usage — $blockchain_mount",
+      "description": "Percentage of disk space used on the selected blockchain volume ($blockchain_mount). Change the \"Blockchain volume\" dropdown if your blockchain lives elsewhere.",
       "datasource": {
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
@@ -2027,7 +2027,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "1 - (node_filesystem_avail_bytes{instance=~\"$instance\",mountpoint=\"/mnt/xmrblockchain\"} / node_filesystem_size_bytes{instance=~\"$instance\",mountpoint=\"/mnt/xmrblockchain\"})",
+          "expr": "1 - (node_filesystem_avail_bytes{instance=~\"$instance\",mountpoint=\"$blockchain_mount\"} / node_filesystem_size_bytes{instance=~\"$instance\",mountpoint=\"$blockchain_mount\"})",
           "legendFormat": "Used %",
           "refId": "A",
           "editorMode": "code",
@@ -2092,7 +2092,7 @@
       },
       "id": 28,
       "panels": [],
-      "title": "\ud83d\udda5\ufe0f System Resources (PiNodeXMR)",
+      "title": "🖥️ System Resources (PiNodeXMR)",
       "type": "row"
     },
     {
@@ -2276,7 +2276,7 @@
       "id": 31,
       "type": "timeseries",
       "title": "Memory Usage",
-      "description": "RAM utilisation \u2014 used vs. available memory",
+      "description": "RAM utilisation — used vs. available memory",
       "datasource": {
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
@@ -2413,7 +2413,7 @@
       "id": 32,
       "type": "timeseries",
       "title": "System Load",
-      "description": "System load averages (1m, 5m, 15m) \u2014 compare against 4 CPU cores",
+      "description": "System load averages (1m, 5m, 15m) — compare against 4 CPU cores",
       "datasource": {
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
@@ -2579,7 +2579,7 @@
     {
       "id": 33,
       "type": "timeseries",
-      "title": "Network Traffic (eth0)",
+      "title": "Network Traffic ($net_device)",
       "description": "Ethernet receive and transmit throughput",
       "datasource": {
         "type": "prometheus",
@@ -2597,7 +2597,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "rate(node_network_receive_bytes_total{instance=~\"$instance\",device=\"eth0\"}[5m])",
+          "expr": "rate(node_network_receive_bytes_total{instance=~\"$instance\",device=\"$net_device\"}[5m])",
           "legendFormat": "Receive",
           "refId": "A",
           "editorMode": "code",
@@ -2608,7 +2608,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "rate(node_network_transmit_bytes_total{instance=~\"$instance\",device=\"eth0\"}[5m])",
+          "expr": "rate(node_network_transmit_bytes_total{instance=~\"$instance\",device=\"$net_device\"}[5m])",
           "legendFormat": "Transmit",
           "refId": "B",
           "editorMode": "code",
@@ -2715,7 +2715,7 @@
     {
       "id": 34,
       "type": "timeseries",
-      "title": "Disk I/O (Blockchain SSD)",
+      "title": "Disk I/O ($disk_device)",
       "description": "Read and write throughput on the blockchain storage device (sda)",
       "datasource": {
         "type": "prometheus",
@@ -2733,7 +2733,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "rate(node_disk_read_bytes_total{instance=~\"$instance\",device=\"sda\"}[5m])",
+          "expr": "rate(node_disk_read_bytes_total{instance=~\"$instance\",device=\"$disk_device\"}[5m])",
           "legendFormat": "Read",
           "refId": "A",
           "editorMode": "code",
@@ -2744,7 +2744,7 @@
             "type": "prometheus",
             "uid": "${DS_PROMETHEUS}"
           },
-          "expr": "rate(node_disk_written_bytes_total{instance=~\"$instance\",device=\"sda\"}[5m])",
+          "expr": "rate(node_disk_written_bytes_total{instance=~\"$instance\",device=\"$disk_device\"}[5m])",
           "legendFormat": "Write",
           "refId": "B",
           "editorMode": "code",
@@ -2885,6 +2885,93 @@
         },
         "refresh": 1,
         "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "/mnt/xmrblockchain",
+          "value": "/mnt/xmrblockchain"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "definition": "label_values(node_filesystem_size_bytes{instance=~\"$instance\",fstype!~\"tmpfs|ramfs|overlay|squashfs|devtmpfs|iso9660\"}, mountpoint)",
+        "description": "Filesystem holding the Monero blockchain. Defaults vary by setup: /mnt/xmrblockchain on a stock PiNodeXMR USB install, / when the blockchain is on the root volume.",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Blockchain volume",
+        "multi": false,
+        "name": "blockchain_mount",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(node_filesystem_size_bytes{instance=~\"$instance\",fstype!~\"tmpfs|ramfs|overlay|squashfs|devtmpfs|iso9660\"}, mountpoint)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "eth0",
+          "value": "eth0"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "definition": "label_values(node_network_receive_bytes_total{instance=~\"$instance\"}, device)",
+        "description": "Interface to chart traffic for — eth0, wlan0, enP8p1s0 and so on. Loopback and container interfaces are filtered out.",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Network interface",
+        "multi": false,
+        "name": "net_device",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(node_network_receive_bytes_total{instance=~\"$instance\"}, device)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "/^(eth[0-9]*|en[A-Za-z0-9]*|wlan[0-9]*|wl[A-Za-z0-9]*)$/",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "sda",
+          "value": "sda"
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
+        "definition": "label_values(node_disk_read_bytes_total{instance=~\"$instance\"}, device)",
+        "description": "Block device holding the blockchain — sda, nvme0n1, mmcblk0. Partitions and loop devices are filtered out.",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Disk device",
+        "multi": false,
+        "name": "disk_device",
+        "options": [],
+        "query": {
+          "qryType": 1,
+          "query": "label_values(node_disk_read_bytes_total{instance=~\"$instance\"}, device)",
+          "refId": "PrometheusVariableQueryEditor-VariableQuery"
+        },
+        "refresh": 1,
+        "regex": "/^(sd[a-z]+|nvme\\d+n\\d+|mmcblk\\d+|vd[a-z]+|hd[a-z]+)$/",
         "skipUrlSync": false,
         "sort": 1,
         "type": "query"

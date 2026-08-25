@@ -1,0 +1,29 @@
+[Unit]
+Description=Prometheus Agent (PiNodeXMR remote_write forwarder)
+Documentation=https://prometheus.io/docs/prometheus/latest/feature_flags/#prometheus-agent
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=prometheus
+Group=prometheus
+Type=simple
+ExecStart=/usr/local/bin/prometheus \
+    --config.file=/etc/prometheus/prometheus-agent.yml \
+    --agent \
+    --storage.agent.path=@@DATA_DIR@@ \
+    --web.listen-address=127.0.0.1:@@PORT@@
+ExecReload=/bin/kill -HUP $MAINPID
+Restart=always
+RestartSec=10
+TimeoutStopSec=30
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=@@DATA_DIR@@
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
