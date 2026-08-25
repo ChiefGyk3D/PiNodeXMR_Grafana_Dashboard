@@ -29,6 +29,18 @@ PNX_RPC_AUTH="digest"
 MAX_CONSECUTIVE_FAILURES="${MAX_CONSECUTIVE_FAILURES:-3}"
 FAILURE_SLEEP="${FAILURE_SLEEP:-10}"
 
+# Read a single KEY=value assignment from a PiNodeXMR variable file WITHOUT
+# executing it. These files live in /home/pinodexmr/variables and are writable
+# by the pinodexmr service account; sourcing them would run whatever they
+# contain, so we extract just the value we asked for. Handles optional single
+# or double quotes and ignores comments.
+read_var_file() {
+    local file="$1" key="$2"
+    [ -r "${file}" ] || return 1
+    sed -n -E "s/^[[:space:]]*(export[[:space:]]+)?${key}=[\"']?([^\"'#]*)[\"']?.*/\2/p" "${file}" \
+        | tail -n1 | sed -E 's/[[:space:]]+$//'
+}
+
 # --- Load configuration --------------------------------------------------
 load_config() {
     if [ -r "${PNX_CONF_FILE}" ]; then
@@ -36,16 +48,15 @@ load_config() {
         set -a; . "${PNX_CONF_FILE}"; set +a
     fi
 
-    # PiNodeXMR mode: re-source the project's own variable files on every poll
-    # so RPC credential and port changes made through the PiNodeXMR menus take
+    # PiNodeXMR mode: re-read the project's own variable files on every poll so
+    # RPC credential and port changes made through the PiNodeXMR menus take
     # effect within one interval, with no restart and no duplicated config.
+    # Parsed, never sourced — see read_var_file.
     if [ "${PNX_RPC_FROM_PINODEXMR}" = "true" ]; then
-        [ -r "${PNX_PINODEXMR_VAR_DIR}/RPCu.sh" ] && . "${PNX_PINODEXMR_VAR_DIR}/RPCu.sh"
-        [ -r "${PNX_PINODEXMR_VAR_DIR}/RPCp.sh" ] && . "${PNX_PINODEXMR_VAR_DIR}/RPCp.sh"
-        [ -r "${PNX_PINODEXMR_VAR_DIR}/monero-port.sh" ] && . "${PNX_PINODEXMR_VAR_DIR}/monero-port.sh"
-        RPC_USER="${RPCu:-}"
-        RPC_PASS="${RPCp:-}"
-        RPC_PORT="${MONERO_PORT:-18081}"
+        RPC_USER="$(read_var_file "${PNX_PINODEXMR_VAR_DIR}/RPCu.sh" RPCu)"
+        RPC_PASS="$(read_var_file "${PNX_PINODEXMR_VAR_DIR}/RPCp.sh" RPCp)"
+        RPC_PORT="$(read_var_file "${PNX_PINODEXMR_VAR_DIR}/monero-port.sh" MONERO_PORT)"
+        [ -z "${RPC_PORT}" ] && RPC_PORT="18081"
         # monerod binds the device's LAN address on PiNodeXMR, not loopback.
         RPC_HOST="$(hostname -I 2>/dev/null | awk '{print $1}')"
         [ -z "${RPC_HOST}" ] && RPC_HOST="127.0.0.1"
@@ -61,21 +72,28 @@ load_config() {
     INTERVAL="${PNX_EXPORTER_INTERVAL}"
 }
 
-# --- Build the curl auth arguments for the configured auth mode ----------
-rpc_auth_args() {
+# --- Curl authentication -------------------------------------------------
+# Emit a curl config file body carrying the credentials. Fed to curl via
+# --config on a process-substitution FD, NEVER on the command line: argv is
+# world-readable through /proc/<pid>/cmdline, and this is a long-running
+# service that would otherwise expose the RPC credentials on every poll.
+rpc_auth_config() {
     case "${PNX_RPC_AUTH}" in
-        none)  ;;
-        basic) printf '%s\n%s\n' "-u" "${RPC_USER}:${RPC_PASS}" ;;
-        *)     printf '%s\n%s\n%s\n' "--digest" "-u" "${RPC_USER}:${RPC_PASS}" ;;
+        none) return 0 ;;
+        basic) ;;
+        *) printf 'digest\n' ;;
     esac
+    # curl config double-quoted strings honour \" and \\ escapes; escape both
+    # so a credential containing either character is passed intact.
+    local u="${RPC_USER//\\/\\\\}" p="${RPC_PASS//\\/\\\\}"
+    u="${u//\"/\\\"}"; p="${p//\"/\\\"}"
+    printf 'user = "%s:%s"\n' "${u}" "${p}"
 }
 
 # rpc_call METHOD -> JSON on stdout; non-zero on transport failure.
 rpc_call() {
     local method="$1"
-    local -a auth=()
-    mapfile -t auth < <(rpc_auth_args)
-    curl -sf --max-time 10 "${auth[@]}" \
+    curl -sf --max-time 10 --config <(rpc_auth_config) \
         -X POST "http://${RPC_HOST}:${RPC_PORT}/json_rpc" \
         -d "{\"jsonrpc\":\"2.0\",\"id\":\"0\",\"method\":\"${method}\"}" \
         -H 'Content-Type: application/json' 2>/dev/null
@@ -84,9 +102,7 @@ rpc_call() {
 # rpc_get PATH -> JSON on stdout (non-json_rpc endpoints such as pool stats).
 rpc_get() {
     local path="$1"
-    local -a auth=()
-    mapfile -t auth < <(rpc_auth_args)
-    curl -sf --max-time 10 "${auth[@]}" \
+    curl -sf --max-time 10 --config <(rpc_auth_config) \
         "http://${RPC_HOST}:${RPC_PORT}/${path}" \
         -H 'Content-Type: application/json' 2>/dev/null
 }
@@ -198,6 +214,15 @@ write_metrics() {
         db_size free_space busy_syncing synchronized start_time \
         cumulative_difficulty update_available version network \
         block_size_limit block_weight_limit <<< "${vals}"
+
+    # version and network become Prometheus label values, so restrict them to a
+    # safe character set. Otherwise a quote or backslash from a malformed or
+    # hostile monerod response would break the label syntax and make
+    # node_exporter drop the whole textfile on its next scrape.
+    version="${version//[^A-Za-z0-9._-]/}"
+    network="${network//[^A-Za-z0-9._-]/}"
+    [ -z "${version}" ] && version="unknown"
+    [ -z "${network}" ] && network="unknown"
 
     local fee_per_byte
     fee_per_byte=$(printf '%s' "${fees}" | jq -r '.result.fee // 0')

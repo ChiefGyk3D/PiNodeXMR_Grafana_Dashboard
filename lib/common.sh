@@ -320,6 +320,47 @@ pnx_ensure_user() {
     useradd --system --no-create-home --shell /usr/sbin/nologin "${user}"
 }
 
+# Read a single KEY=value assignment from a shell variable file WITHOUT
+# executing it. PiNodeXMR's /home/pinodexmr/variables/*.sh files are writable
+# by the unprivileged pinodexmr account; the installer runs as root, so
+# sourcing them would let that account run code as root. Parse instead.
+pnx_read_var_file() {
+    local file="$1" key="$2"
+    [ -r "${file}" ] || return 1
+    sed -n -E "s/^[[:space:]]*(export[[:space:]]+)?${key}=[\"']?([^\"'#]*)[\"']?.*/\2/p" "${file}" \
+        | tail -n1 | sed -E 's/[[:space:]]+$//'
+}
+
+# Emit a curl config-file body carrying credentials, for feeding to
+# `curl --config <(pnx_curl_auth_config ...)`. Keeps -u off argv, which is
+# world-readable via /proc/<pid>/cmdline.
+# pnx_curl_auth_config AUTH USER PASS
+pnx_curl_auth_config() {
+    local auth="$1" user="$2" pass="$3"
+    case "${auth}" in
+        none) return 0 ;;
+        basic) ;;
+        *) printf 'digest\n' ;;
+    esac
+    user="${user//\\/\\\\}"; pass="${pass//\\/\\\\}"
+    user="${user//\"/\\\"}"; pass="${pass//\"/\\\"}"
+    printf 'user = "%s:%s"\n' "${user}" "${pass}"
+}
+
+# Generate a strong random password (used when an unattended install needs a
+# Grafana admin password and none was provided). Alphanumeric so it survives
+# every shell/YAML/CLI context we hand it to.
+pnx_random_password() {
+    local pw=""
+    if [ -r /dev/urandom ]; then
+        pw="$(LC_ALL=C tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 24)"
+    fi
+    # Fallbacks if /dev/urandom yielded nothing.
+    [ -z "${pw}" ] && command -v openssl >/dev/null 2>&1 && pw="$(openssl rand -base64 18 | LC_ALL=C tr -dc 'A-Za-z0-9' | head -c 24)"
+    [ -z "${pw}" ] && pw="pnx$(date +%s)$$Chg"
+    printf '%s' "${pw}"
+}
+
 pnx_primary_ip() {
     hostname -I 2>/dev/null | awk '{print $1}'
 }

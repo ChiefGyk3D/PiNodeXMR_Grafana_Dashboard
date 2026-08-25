@@ -19,7 +19,6 @@ services:
     image: @@PROM_IMAGE@@
     container_name: pinodexmr-prometheus
     restart: unless-stopped
-    user: "@@PUID@@:@@PGID@@"
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -41,7 +40,6 @@ services:
     image: @@GRAFANA_IMAGE@@
     container_name: pinodexmr-grafana
     restart: unless-stopped
-    user: "@@PUID@@:@@PGID@@"
 #@@BEGIN:GRAFANA_DEPENDS@@
     depends_on:
       - prometheus

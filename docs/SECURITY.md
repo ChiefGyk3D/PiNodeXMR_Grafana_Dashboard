@@ -27,11 +27,23 @@ Credentials live in `/etc/pinodexmr-monitoring/config.env`, mode `0640`, owned
 
 On PiNodeXMR, prefer `PNX_RPC_FROM_PINODEXMR=true`: the credentials are then
 read from PiNodeXMR's own variable files at poll time and are never duplicated
-into a second file.
+into a second file. Those files are **parsed, never sourced** — the installer
+runs as root and the files are writable by the unprivileged `pinodexmr`
+account, so executing them would be a privilege-escalation path.
 
-**The Grafana admin password is not stored on disk by the add-on.** It is
-applied to Grafana's own database during installation and then cleared from the
-config file.
+**Credentials are never placed on a command line.** `curl` is authenticated
+through a config passed on a file descriptor, not `-u` on the command line,
+because a process's arguments are world-readable via `/proc/<pid>/cmdline` and
+the exporter re-authenticates on every poll. The Grafana admin password is set
+through `grafana-cli --password-from-stdin` where available (falling back to
+the positional form only on older Grafana that lacks the flag).
+
+**The Grafana admin password is not stored on disk by the add-on** in the
+native flavour: it is applied to Grafana's own database during installation and
+then cleared from the config file. In the Docker flavour it is held as a
+compose secret file (`0400`, owned by the Grafana container's UID). If an
+unattended install selects Grafana with no password set, a strong random one is
+generated and shown once in the final report rather than leaving `admin/admin`.
 
 ## node_exporter has no authentication
 

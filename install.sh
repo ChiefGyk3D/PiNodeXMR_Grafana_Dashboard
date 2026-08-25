@@ -262,8 +262,9 @@ pnx_ask_datasource() {
     local probe="${PNX_GRAFANA_DS_URL%/}/api/v1/query?query=up"
     local -a args=(-sf --max-time 8)
     [ "${PNX_GRAFANA_DS_INSECURE}" = "true" ] && args+=(-k)
-    [ "${PNX_GRAFANA_DS_AUTH}" = "basic" ] && args+=(-u "${PNX_GRAFANA_DS_USER}:${PNX_GRAFANA_DS_PASS}")
-    if curl "${args[@]}" "${probe}" 2>/dev/null | grep -q '"status"[[:space:]]*:[[:space:]]*"success"'; then
+    # Credentials go through curl --config on an FD, never argv.
+    if curl "${args[@]}" --config <(pnx_curl_auth_config "${PNX_GRAFANA_DS_AUTH}" "${PNX_GRAFANA_DS_USER}" "${PNX_GRAFANA_DS_PASS}") \
+        "${probe}" 2>/dev/null | grep -q '"status"[[:space:]]*:[[:space:]]*"success"'; then
         pnx_msgbox "${PNX_TITLE} — Datasource" "Connected to the database successfully."
     else
         pnx_yesno "${PNX_TITLE} — Datasource" \
@@ -401,12 +402,14 @@ pnx_interview() {
             pnx_ask_grafana
             PNX_GRAFANA_DS_URL=""   # dashboard reads the local Prometheus
             pnx_ask_prometheus 0
-            PNX_NODE_EXPORTER_BIND="127.0.0.1"
+            # A containerised Prometheus reaches node_exporter over the Docker
+            # bridge, not loopback, so it must listen on all interfaces there.
+            [ "${PNX_LOCAL_STACK}" = "docker" ] && PNX_NODE_EXPORTER_BIND="0.0.0.0" || PNX_NODE_EXPORTER_BIND="127.0.0.1"
             ;;
         backend)
             pnx_ask_stack_flavour "Prometheus"
             pnx_ask_prometheus 1
-            PNX_NODE_EXPORTER_BIND="127.0.0.1"
+            [ "${PNX_LOCAL_STACK}" = "docker" ] && PNX_NODE_EXPORTER_BIND="0.0.0.0" || PNX_NODE_EXPORTER_BIND="127.0.0.1"
             ;;
         viewer)
             pnx_ask_stack_flavour "Grafana"
@@ -449,6 +452,26 @@ pnx_do_install() {
     local exporter_state=$?
 
     pnx_info "--- Step 4/4: $(pnx_mode_name) ---"
+
+    # Safety net for unattended installs: never bring up Grafana with no admin
+    # password (native would keep admin/admin; docker would write an empty
+    # secret). If Grafana is being installed fresh and no password is set,
+    # generate a strong one and surface it once in the final report.
+    PNX_GRAFANA_PASS_GENERATED=0
+    if [ "${PNX_INSTALL_GRAFANA}" = "true" ] && [ -z "${PNX_GRAFANA_ADMIN_PASS}" ]; then
+        local grafana_fresh=1
+        if [ "${PNX_LOCAL_STACK}" = "docker" ]; then
+            [ -f "${PNX_DOCKER_DIR}/secrets/grafana_admin_password" ] && \
+                [ -s "${PNX_DOCKER_DIR}/secrets/grafana_admin_password" ] && grafana_fresh=0
+        else
+            dpkg -s grafana >/dev/null 2>&1 && grafana_fresh=0
+        fi
+        if [ "${grafana_fresh}" = "1" ]; then
+            PNX_GRAFANA_ADMIN_PASS="$(pnx_random_password)"
+            PNX_GRAFANA_PASS_GENERATED=1
+            pnx_warn "No Grafana admin password was set; generated a random one (shown at the end)."
+        fi
+    fi
 
     # Local components, if any (each installer honours the two switches).
     if [ "${PNX_INSTALL_PROMETHEUS}" = "true" ] || [ "${PNX_INSTALL_GRAFANA}" = "true" ]; then
@@ -495,7 +518,12 @@ pnx_report() {
         local host="${ip}"
         [ "${PNX_GRAFANA_BIND}" = "127.0.0.1" ] && host="127.0.0.1"
         msg+="\nGrafana:    http://${host}:${PNX_GRAFANA_PORT}\n"
-        msg+="Login:      ${PNX_GRAFANA_ADMIN_USER} / (the password you set)\n"
+        if [ "${PNX_GRAFANA_PASS_GENERATED:-0}" = "1" ]; then
+            msg+="Login:      ${PNX_GRAFANA_ADMIN_USER} / ${PNX_GRAFANA_ADMIN_PASS}\n"
+            msg+="            ^ generated for you — save it now, it is not stored in cleartext.\n"
+        else
+            msg+="Login:      ${PNX_GRAFANA_ADMIN_USER} / (the password you set)\n"
+        fi
         msg+="Dashboard:  already provisioned under the 'PiNodeXMR' folder —\n            no manual import or datasource picking needed.\n"
         if [ -n "${PNX_GRAFANA_DS_URL}" ]; then
             msg+="Datasource: ${PNX_GRAFANA_DS_URL}\n"

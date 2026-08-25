@@ -178,11 +178,17 @@ pnx_grafana_setup() {
     # Grafana's own database, so it works on a fresh install and on a re-run,
     # and the plaintext never persists in a config file.
     if [ -n "${PNX_GRAFANA_ADMIN_PASS}" ]; then
-        if grafana-cli --homepath /usr/share/grafana admin reset-admin-password "${PNX_GRAFANA_ADMIN_PASS}" >/dev/null 2>&1; then
+        # Prefer --password-from-stdin (Grafana 9.1+) so the password never
+        # touches argv, which is world-readable via /proc. Fall back to the
+        # positional form only on older grafana-cli that lacks the flag.
+        if printf '%s' "${PNX_GRAFANA_ADMIN_PASS}" | \
+            grafana-cli --homepath /usr/share/grafana admin reset-admin-password --password-from-stdin >/dev/null 2>&1; then
+            pnx_info "Grafana admin password set for user '${PNX_GRAFANA_ADMIN_USER}'"
+        elif grafana-cli --homepath /usr/share/grafana admin reset-admin-password "${PNX_GRAFANA_ADMIN_PASS}" >/dev/null 2>&1; then
             pnx_info "Grafana admin password set for user '${PNX_GRAFANA_ADMIN_USER}'"
         else
             pnx_warn "Could not set the Grafana admin password automatically."
-            pnx_warn "Set it manually: sudo grafana-cli --homepath /usr/share/grafana admin reset-admin-password '<password>'"
+            pnx_warn "Set it manually: sudo grafana-cli --homepath /usr/share/grafana admin reset-admin-password --password-from-stdin"
         fi
     fi
 

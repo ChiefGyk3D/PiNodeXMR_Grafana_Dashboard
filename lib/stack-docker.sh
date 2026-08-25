@@ -53,12 +53,13 @@ pnx_stack_docker_install() {
     local dir="${PNX_DOCKER_DIR}"
     mkdir -p "${dir}"
 
-    # Containers run as a dedicated unprivileged user so the bind-mounted
-    # provisioning files are never owned by root inside the container.
-    pnx_ensure_user pinodexmr-mon
-    local puid pgid
-    puid="$(id -u pinodexmr-mon)"
-    pgid="$(id -g pinodexmr-mon)"
+    # The official images run as their own non-root users and initialise their
+    # named data volumes as those users. We must NOT override with a random
+    # UID (that breaks the volume's ownership and the container crash-loops),
+    # so instead we chown the bind-mounted config to the image UIDs:
+    #   grafana/grafana  -> uid 472
+    #   prom/prometheus  -> uid 65534 (nobody)
+    local grafana_uid=472 prom_uid=65534
 
     # --- Prometheus config (only when the database runs here) ---
     if [ "${PNX_INSTALL_PROMETHEUS}" = "true" ]; then
@@ -115,9 +116,7 @@ pnx_stack_docker_install() {
         "PROM_PORT=${PNX_PROM_PORT}" \
         "GRAFANA_BIND=${PNX_GRAFANA_BIND}" \
         "GRAFANA_PORT=${PNX_GRAFANA_PORT}" \
-        "GRAFANA_ADMIN_USER=${PNX_GRAFANA_ADMIN_USER}" \
-        "PUID=${puid}" \
-        "PGID=${pgid}"
+        "GRAFANA_ADMIN_USER=${PNX_GRAFANA_ADMIN_USER}"
 
     [ "${PNX_INSTALL_PROMETHEUS}" = "true" ] || pnx_strip_section "${dir}/docker-compose.yml" PROMETHEUS
     [ "${PNX_INSTALL_GRAFANA}" = "true" ]    || pnx_strip_section "${dir}/docker-compose.yml" GRAFANA
@@ -125,8 +124,19 @@ pnx_stack_docker_install() {
     [ "${PNX_INSTALL_PROMETHEUS}" = "true" ] || pnx_strip_section "${dir}/docker-compose.yml" GRAFANA_DEPENDS
     pnx_clear_section_markers "${dir}/docker-compose.yml"
 
-    chown -R "${puid}:${pgid}" "${dir}"
-    [ -d "${dir}/secrets" ] && chmod 0750 "${dir}/secrets"
+    # The compose file and top dir stay root-owned; only the bind-mounted
+    # config each container reads gets the image UID.
+    if [ "${PNX_INSTALL_PROMETHEUS}" = "true" ]; then
+        chown -R "${prom_uid}:${prom_uid}" "${dir}/prometheus"
+        chmod 0640 "${dir}/prometheus/prometheus.yml"
+    fi
+    if [ "${PNX_INSTALL_GRAFANA}" = "true" ]; then
+        chown -R "${grafana_uid}:${grafana_uid}" "${dir}/grafana" "${dir}/secrets"
+        # The admin-password secret is readable only by the Grafana container's
+        # user, not group/other.
+        chmod 0700 "${dir}/secrets"
+        chmod 0400 "${dir}/secrets/grafana_admin_password"
+    fi
 
     pnx_info "Starting the monitoring containers (first run pulls images)"
     ( cd "${dir}" && pnx_compose up -d ) || {

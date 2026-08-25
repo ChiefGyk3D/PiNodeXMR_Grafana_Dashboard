@@ -72,14 +72,9 @@ pnx_exporter_verify() {
 # pnx_exporter_test_rpc HOST PORT USER PASS AUTH
 pnx_exporter_test_rpc() {
     local host="$1" port="$2" user="$3" pass="$4" auth="$5"
-    local -a args=(-sf --max-time 8)
-    case "${auth}" in
-        none)  ;;
-        basic) args+=(-u "${user}:${pass}") ;;
-        *)     args+=(--digest -u "${user}:${pass}") ;;
-    esac
     local out
-    out=$(curl "${args[@]}" -X POST "http://${host}:${port}/json_rpc" \
+    out=$(curl -sf --max-time 8 --config <(pnx_curl_auth_config "${auth}" "${user}" "${pass}") \
+        -X POST "http://${host}:${port}/json_rpc" \
         -d '{"jsonrpc":"2.0","id":"0","method":"get_info"}' \
         -H 'Content-Type: application/json' 2>/dev/null) || return 1
     printf '%s' "${out}" | jq -e '.result.height' >/dev/null 2>&1 || return 1
@@ -91,11 +86,12 @@ pnx_exporter_test_rpc() {
 pnx_exporter_effective_rpc() {
     local host port user pass
     if [ "${PNX_RPC_FROM_PINODEXMR}" = "true" ]; then
-        # shellcheck disable=SC1090
-        [ -r "${PNX_PINODEXMR_VAR_DIR}/RPCu.sh" ] && . "${PNX_PINODEXMR_VAR_DIR}/RPCu.sh"
-        [ -r "${PNX_PINODEXMR_VAR_DIR}/RPCp.sh" ] && . "${PNX_PINODEXMR_VAR_DIR}/RPCp.sh"
-        [ -r "${PNX_PINODEXMR_VAR_DIR}/monero-port.sh" ] && . "${PNX_PINODEXMR_VAR_DIR}/monero-port.sh"
-        user="${RPCu:-}"; pass="${RPCp:-}"; port="${MONERO_PORT:-18081}"
+        # Parsed, never sourced — these files are pinodexmr-writable and we run
+        # as root (see pnx_read_var_file).
+        user="$(pnx_read_var_file "${PNX_PINODEXMR_VAR_DIR}/RPCu.sh" RPCu)"
+        pass="$(pnx_read_var_file "${PNX_PINODEXMR_VAR_DIR}/RPCp.sh" RPCp)"
+        port="$(pnx_read_var_file "${PNX_PINODEXMR_VAR_DIR}/monero-port.sh" MONERO_PORT)"
+        [ -z "${port}" ] && port="18081"
         host="$(pnx_primary_ip)"; [ -z "${host}" ] && host="127.0.0.1"
     else
         host="${PNX_RPC_HOST}"; port="${PNX_RPC_PORT}"
