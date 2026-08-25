@@ -64,11 +64,41 @@ pnx_dashboard_to_provisioned() {
     pnx_info "Prepared provisioned dashboard: ${dest}"
 }
 
+# Optional credentials for the datasource, used when the database is an
+# existing one elsewhere in the lab rather than the locally managed
+# Prometheus. Built with real newlines and YAML single-quoting so credentials
+# survive byte-for-byte (see pnx_yaml_squote).
+pnx_ds_auth_block() {
+    case "${PNX_GRAFANA_DS_AUTH:-none}" in
+        basic)
+            cat <<EOF
+    basicAuth: true
+    basicAuthUser: $(pnx_yaml_squote "${PNX_GRAFANA_DS_USER}")
+    secureJsonData:
+      basicAuthPassword: $(pnx_yaml_squote "${PNX_GRAFANA_DS_PASS}")
+EOF
+            ;;
+        *)
+            printf '    basicAuth: false\n'
+            ;;
+    esac
+}
+
+pnx_ds_json_extra() {
+    if [ "${PNX_GRAFANA_DS_INSECURE:-false}" = "true" ]; then
+        printf '      tlsSkipVerify: true\n'
+    else
+        printf ''
+    fi
+}
+
 # pnx_provision_grafana PROVISIONING_DIR DASHBOARD_DIR PROM_URL
 #
 # PROVISIONING_DIR — Grafana's provisioning root (contains datasources/, dashboards/)
 # DASHBOARD_DIR    — where dashboard JSON files live, as Grafana sees the path
-# PROM_URL         — Prometheus URL, as Grafana sees it
+# PROM_URL         — the database URL, as Grafana sees it: the locally managed
+#                    Prometheus, or an existing Prometheus-compatible endpoint
+#                    elsewhere (with optional basic auth via PNX_GRAFANA_DS_*)
 #
 # For the Docker flavour the *container* paths differ from the host paths, so
 # the caller passes host paths for writing and we take the container-visible
@@ -79,11 +109,20 @@ pnx_provision_grafana() {
 
     mkdir -p "${prov_dir}/datasources" "${prov_dir}/dashboards" "${dash_dir}"
 
+    local auth_block json_extra
+    auth_block="$(pnx_ds_auth_block)"
+    json_extra="$(pnx_ds_json_extra)"
+
     pnx_render "${PNX_SRC_DIR}/templates/grafana-datasource.yml.tmpl" \
         "${prov_dir}/datasources/pinodexmr.yml" \
         "DS_NAME=Prometheus (PiNodeXMR)" \
         "PROM_URL=${prom_url}" \
-        "SCRAPE_INTERVAL=${PNX_PROM_SCRAPE_INTERVAL}"
+        "SCRAPE_INTERVAL=${PNX_PROM_SCRAPE_INTERVAL}" \
+        "DS_AUTH_BLOCK=${auth_block}" \
+        "DS_JSON_EXTRA=${json_extra}"
+
+    # The datasource file now may hold credentials — restrict it.
+    chmod 0640 "${prov_dir}/datasources/pinodexmr.yml" 2>/dev/null || true
 
     pnx_render "${PNX_SRC_DIR}/templates/grafana-dashboard-provider.yml.tmpl" \
         "${prov_dir}/dashboards/pinodexmr.yml" \

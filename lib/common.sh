@@ -298,6 +298,13 @@ pnx_download() {
 }
 
 # --- Misc ----------------------------------------------------------------
+# Quote a value for a YAML single-quoted scalar: the only escape that form
+# needs is doubling any embedded single quote.
+pnx_yaml_squote() {
+    local v="$1"
+    printf "'%s'" "${v//\'/\'\'}"
+}
+
 pnx_backup_file() {
     local f="$1"
     [ -f "${f}" ] || return 0
@@ -315,6 +322,20 @@ pnx_ensure_user() {
 
 pnx_primary_ip() {
     hostname -I 2>/dev/null | awk '{print $1}'
+}
+
+# Templates may carry optional sections fenced by "#@@BEGIN:NAME@@" and
+# "#@@END:NAME@@" lines. pnx_strip_section removes every such section from a
+# rendered file; pnx_keep_sections removes only the marker lines, keeping the
+# content. A section name may appear more than once in one file.
+pnx_strip_section() {
+    local file="$1" name="$2"
+    sed -i "/^#@@BEGIN:${name}@@\$/,/^#@@END:${name}@@\$/d" "${file}"
+}
+
+pnx_clear_section_markers() {
+    local file="$1"
+    sed -i '/^#@@\(BEGIN\|END\):[A-Z_]*@@$/d' "${file}"
 }
 
 # Render a .tmpl file to a destination, substituting only @@NAME@@ markers.

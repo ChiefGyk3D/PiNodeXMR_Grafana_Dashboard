@@ -42,12 +42,17 @@ sudo ./install.sh
 
 ## What you will be asked
 
-### 1. Deployment mode
+### 1. Topology — where should each piece run?
+
+Grafana (the dashboard) and Prometheus (the database) are chosen
+independently, so the installer fits whatever your lab already has:
 
 | Choice | Use it when |
 |---|---|
-| **local** | You want to open a browser at your PiNodeXMR and see the dashboard. Grafana and Prometheus are installed on the device. |
-| **agent** | You already have Grafana somewhere, or you want to watch several nodes from one place. |
+| **Everything on this device** | You have nothing yet — browse to the PiNodeXMR and the dashboard is there. |
+| **Database here, Grafana elsewhere** | You already run Grafana in your lab. This device becomes a datasource; the installer prints and saves the exact URL and import steps. |
+| **Grafana here, database elsewhere** | You already have Prometheus, VictoriaMetrics or Mimir. Grafana on the device is provisioned against it (URL, optional basic auth, self-signed TLS), and you choose how the metrics reach it (push/pull). |
+| **Neither — just report** | A complete stack lives elsewhere. This device only produces metrics. |
 
 ### 2. Node name
 
@@ -69,7 +74,7 @@ shows your blockchain height, so a wrong password surfaces right away.
 
 Default 30 seconds. Below 15 adds load for little benefit.
 
-### 5a. Local mode questions
+### 5a. Questions when Grafana and/or Prometheus run here
 
 - **Native or Docker.** Native is lighter and matches how PiNodeXMR does
   everything else. Docker is more isolated and removes cleanly, at the cost of
@@ -83,9 +88,14 @@ Default 30 seconds. Below 15 adds load for little benefit.
 - **Retention.** How long and how large the metrics history may grow — both
   limits apply, whichever is hit first. Defaults `15d` / `2GB`, chosen to be
   gentle on an SD card.
-- **Expose Prometheus?** Default no. Grafana talks to it over loopback anyway.
+- **Expose Prometheus?** In the all-in-one setup, default no — Grafana talks
+  to it over loopback anyway. In the database-here setup the question flips:
+  your Grafana elsewhere must reach it, so network binding is the default.
+- **Datasource** (Grafana-here-database-elsewhere only): the URL of your
+  existing database, optional username/password, and whether to accept a
+  self-signed certificate. The installer test-queries it immediately.
 
-### 5b. Agent mode questions
+### 5b. Questions when the database lives elsewhere
 
 - **Transport** — `push`, `pull`, or `both`. See
   [REMOTE-MONITORING.md](REMOTE-MONITORING.md).

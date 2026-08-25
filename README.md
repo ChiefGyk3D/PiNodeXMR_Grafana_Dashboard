@@ -38,31 +38,38 @@ sudo ./install.sh
 Works on any Debian/Ubuntu host with systemd, against PiNodeXMR or a plain
 monerod.
 
-## Two ways to run it
+## Four ways to run it
 
-### Local — everything on the node
+Not every lab looks the same, so Grafana (the dashboard) and Prometheus (the
+database) are chosen **independently** — each runs on the device or lives
+elsewhere. Metrics collection always runs on the device.
 
-Prometheus and Grafana are installed on the PiNodeXMR and served on a port you
-choose (default `3000`). Browse to it from your LAN and the dashboard is
-waiting.
+| Topology | On this device | You already have |
+|---|---|---|
+| **Full** | Grafana + Prometheus | nothing — all-in-one, browse to port 3000 |
+| **Backend** | Prometheus only | Grafana elsewhere → add this device as a datasource |
+| **Viewer** | Grafana only | a Prometheus-compatible database elsewhere |
+| **Agent** | neither | a complete stack elsewhere — this device just reports |
 
-Pick **native** packages (light, matches how PiNodeXMR does everything else) or
-**Docker** (isolated, removes cleanly). You are asked at install time.
+- **Full** — everything installed here, served on a port you choose (default
+  `3000`). Native packages or Docker, picked at install time.
+- **Backend** — for "I have Grafana in my lab but no database for this node."
+  Prometheus runs here; the installer prints (and saves) the exact datasource
+  URL and import steps for your existing Grafana.
+- **Viewer** — for "I already have Prometheus / VictoriaMetrics / Mimir."
+  Grafana runs here, provisioned against your existing database (URL, optional
+  basic auth, self-signed TLS supported), while the metrics flow to that
+  database by push or pull.
+- **Agent** — nothing but collection here. Two transports, usable together:
+  - **push** — a Prometheus Agent forwards over `remote_write`. Only outbound
+    connections, so it works from behind NAT/CGNAT with **no inbound ports
+    opened**. Works with your own Prometheus, Grafana Cloud, Mimir or
+    VictoriaMetrics.
+  - **pull** — node_exporter is exposed for your Prometheus to scrape. The
+    installer writes a ready-to-paste `scrape_config`.
 
-### Agent — report to monitoring elsewhere
-
-The device produces metrics; Grafana lives somewhere else. Two transports,
-usable together:
-
-- **push** — a Prometheus Agent forwards over `remote_write`. Only outbound
-  connections, so it works from behind NAT/CGNAT with **no inbound ports
-  opened**. Works with your own Prometheus, Grafana Cloud, Mimir or
-  VictoriaMetrics.
-- **pull** — node_exporter is exposed for your Prometheus to scrape. The
-  installer writes a ready-to-paste `scrape_config`.
-
-This is how you watch a node on another network, or several nodes from one
-dashboard. See [docs/REMOTE-MONITORING.md](docs/REMOTE-MONITORING.md).
+Cross-network setups (a node at home, monitoring in the cloud, several nodes
+on one dashboard): [docs/REMOTE-MONITORING.md](docs/REMOTE-MONITORING.md).
 
 ## What you get
 
@@ -80,6 +87,12 @@ dashboard. See [docs/REMOTE-MONITORING.md](docs/REMOTE-MONITORING.md).
 The System Resources section is drawn from standard `node_exporter` host
 metrics, which arrive on the same endpoint with the same labels as the
 `monerod_*` series — so host and node data share a timeline.
+
+No two devices are wired the same, so the storage and network panels do not
+assume a layout: dropdowns at the top of the dashboard list the filesystems,
+network interfaces and disks that actually exist on the selected device, and
+the panels follow whatever you pick. See
+[docs/CONFIGURATION.md](docs/CONFIGURATION.md#dashboard-variables).
 
 Full list: [docs/METRICS.md](docs/METRICS.md).
 

@@ -52,7 +52,7 @@ main() {
     fi
 
     # --- Docker stack ---
-    if [ "${PNX_MODE}" = "local" ] && [ "${PNX_LOCAL_STACK}" = "docker" ]; then
+    if [ "${PNX_LOCAL_STACK}" = "docker" ] && [ -f "${PNX_DOCKER_DIR}/docker-compose.yml" ]; then
         pnx_stack_docker_remove
         if pnx_yesno "${PNX_TITLE}" "Also delete the compose project directory at ${PNX_DOCKER_DIR}?\n\nThis removes the generated configuration and the Grafana admin password secret." 0; then
             rm -rf "${PNX_DOCKER_DIR}"

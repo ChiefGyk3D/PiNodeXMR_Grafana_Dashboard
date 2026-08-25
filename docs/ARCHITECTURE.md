@@ -123,15 +123,30 @@ is easy on an SD card.
 
 Both transports can be enabled together (`both`).
 
+### Mixed topologies
+
+Grafana and Prometheus are independent install switches, so two further
+shapes exist for labs that already run half the stack:
+
+- **Backend** — Prometheus on the device, dashboard in your existing Grafana.
+  The device's Prometheus scrapes locally and serves the query API on the LAN;
+  your Grafana adds `http://<device>:9090` as a datasource and imports the
+  dashboard JSON.
+- **Viewer** — Grafana on the device, database in your existing lab. The local
+  Grafana is provisioned against any Prometheus-compatible endpoint
+  (Prometheus, Mimir, VictoriaMetrics, Thanos Query — with optional basic
+  auth), while the device's metrics reach that database over push or pull
+  exactly as in agent mode.
+
 ## Components installed
 
-| Component | Local mode | Agent (pull) | Agent (push) | Installed from |
-|---|:---:|:---:|:---:|---|
-| `monerod-exporter` | ✅ | ✅ | ✅ | this repo |
-| `node_exporter` | ✅ loopback | ✅ exposed | ✅ loopback | upstream release binary |
-| `prometheus` | ✅ server | — | ✅ agent mode | upstream release binary |
-| `grafana` | ✅ | — | — | Grafana Labs APT repo |
-| Docker + Compose | optional | — | — | get.docker.com |
+| Component | Full | Backend | Viewer | Agent (pull) | Agent (push) | Installed from |
+|---|:---:|:---:|:---:|:---:|:---:|---|
+| `monerod-exporter` | ✅ | ✅ | ✅ | ✅ | ✅ | this repo |
+| `node_exporter` | ✅ loopback | ✅ loopback | per transport | ✅ exposed | ✅ loopback | upstream release binary |
+| `prometheus` | ✅ server | ✅ server, LAN-facing | agent mode if pushing | — | ✅ agent mode | upstream release binary |
+| `grafana` | ✅ | — | ✅ | — | — | Grafana Labs APT repo |
+| Docker + Compose | optional | optional | optional | — | — | get.docker.com |
 
 > **PiNodeXMR does not ship node_exporter.** The installer installs it. If your
 > device already has one — from APT or a manual install — the installer detects

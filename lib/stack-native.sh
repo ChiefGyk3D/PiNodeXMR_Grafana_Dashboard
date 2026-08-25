@@ -155,14 +155,18 @@ pnx_grafana_setup() {
     fi
 
     # Provision the datasource + dashboard before first start so Grafana comes
-    # up already wired to Prometheus.
+    # up already wired to its database. That database is the locally managed
+    # Prometheus by default, or an existing Prometheus-compatible endpoint
+    # elsewhere when PNX_GRAFANA_DS_URL is set (viewer topology).
+    local ds_url="${PNX_GRAFANA_DS_URL}"
+    [ -z "${ds_url}" ] && ds_url="http://127.0.0.1:${PNX_PROM_PORT}"
     # Consumed by pnx_provision_grafana in lib/provision.sh.
     # shellcheck disable=SC2034
     PNX_DASHBOARD_DIR_INTERNAL="/var/lib/grafana/dashboards/pinodexmr"
     pnx_provision_grafana \
         "/etc/grafana/provisioning" \
         "/var/lib/grafana/dashboards/pinodexmr" \
-        "http://127.0.0.1:${PNX_PROM_PORT}" || return 1
+        "${ds_url}" || return 1
 
     chown -R root:grafana /etc/grafana/provisioning 2>/dev/null || true
     chown -R grafana:grafana /var/lib/grafana/dashboards 2>/dev/null || true
@@ -197,8 +201,13 @@ pnx_grafana_set_env() {
 }
 
 # --- Entry point ---------------------------------------------------------
+# Installs only the components selected for this device.
 pnx_stack_native_install() {
-    pnx_prometheus_setup || return 1
-    pnx_grafana_setup    || return 1
+    if [ "${PNX_INSTALL_PROMETHEUS}" = "true" ]; then
+        pnx_prometheus_setup || return 1
+    fi
+    if [ "${PNX_INSTALL_GRAFANA}" = "true" ]; then
+        pnx_grafana_setup || return 1
+    fi
     return 0
 }

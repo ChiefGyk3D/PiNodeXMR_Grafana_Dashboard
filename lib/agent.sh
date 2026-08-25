@@ -52,13 +52,6 @@ EOF
 }
 
 # --- Push transport ------------------------------------------------------
-# Quote a value for a YAML single-quoted scalar: the only escape that form
-# needs is doubling any embedded single quote.
-pnx_yaml_squote() {
-    local v="$1"
-    printf "'%s'" "${v//\'/\'\'}"
-}
-
 # Build the YAML block carrying remote_write credentials, indented to sit
 # under the remote_write list item.
 #

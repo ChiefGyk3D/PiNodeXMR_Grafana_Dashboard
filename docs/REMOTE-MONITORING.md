@@ -1,8 +1,13 @@
 # Monitoring from another network
 
-Agent mode is for when Grafana does not live on the PiNodeXMR: a node at home
-watched from a VPS, a node at a friend's house, several nodes on one dashboard,
-or a device behind CGNAT with no way to open a port.
+These transports apply whenever the database does not live on the PiNodeXMR:
+a node at home watched from a VPS, a node at a friend's house, several nodes on
+one dashboard, or a device behind CGNAT with no way to open a port. That is
+the **agent** topology (nothing local) and the **viewer** topology (Grafana
+local, database elsewhere) alike — and if you have the opposite split, Grafana
+elsewhere and no database yet, the **backend** topology skips transports
+entirely: the device's own Prometheus serves your Grafana directly (see
+[INSTALL.md](INSTALL.md#1-topology--where-should-each-piece-run)).
 
 ## Which transport?
 

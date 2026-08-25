@@ -170,19 +170,21 @@ pnx_ask_firewall() {
 }
 
 # --- Interview: local mode ----------------------------------------------
-pnx_ask_local() {
-    local stack
-    stack="$(pnx_menu "${PNX_TITLE} — Local stack" \
-        "How should Prometheus and Grafana be installed on this device?" \
+pnx_ask_stack_flavour() {
+    local stack what="$1"
+    stack="$(pnx_menu "${PNX_TITLE} — Flavour" \
+        "How should ${what} be installed on this device?" \
         "native" "Native packages — lighter, matches PiNodeXMR's style" \
         "docker" "Docker containers — isolated, easier to remove")"
     PNX_LOCAL_STACK="${stack:-native}"
 
     if [ "${PNX_LOCAL_STACK}" = "docker" ] && ! command -v docker >/dev/null 2>&1; then
-        pnx_yesno "${PNX_TITLE} — Local stack" \
+        pnx_yesno "${PNX_TITLE} — Flavour" \
             "Docker is not installed on this device.\n\nThe installer can install Docker Engine from get.docker.com. On a Raspberry Pi this takes several minutes and uses a few hundred MB.\n\nContinue with the Docker flavour?" 1 || PNX_LOCAL_STACK="native"
     fi
+}
 
+pnx_ask_grafana() {
     PNX_GRAFANA_PORT="$(pnx_prompt_port "${PNX_TITLE} — Grafana" \
         "Which port should Grafana listen on?\n\n3000 is Grafana's default and does not clash with PiNodeXMR's own ports (80, 18081, 18083, 18089)." \
         "${PNX_GRAFANA_PORT}")"
@@ -200,7 +202,8 @@ pnx_ask_local() {
     while true; do
         p1="$(pnx_password "${PNX_TITLE} — Grafana" "Set the Grafana admin password (user: ${PNX_GRAFANA_ADMIN_USER}).\n\nLeave blank to keep the existing password if Grafana is already installed.")"
         if [ -z "${p1}" ]; then
-            if [ -n "${PNX_GRAFANA_ADMIN_PASS}" ] || dpkg -s grafana >/dev/null 2>&1 || [ "${PNX_ASSUME_YES}" = "1" ]; then
+            if [ -n "${PNX_GRAFANA_ADMIN_PASS}" ] || dpkg -s grafana >/dev/null 2>&1 || \
+               [ -f "${PNX_DOCKER_DIR}/secrets/grafana_admin_password" ] || [ "${PNX_ASSUME_YES}" = "1" ]; then
                 break
             fi
             pnx_msgbox "${PNX_TITLE} — Grafana" "A password is required for a new Grafana installation.\n\nOtherwise Grafana would be left on its admin/admin default, reachable by anyone who can see the port."
@@ -218,6 +221,60 @@ pnx_ask_local() {
         PNX_GRAFANA_ADMIN_PASS="${p1}"
         break
     done
+}
+
+# Where should the local Grafana read its data from? Only asked when Grafana
+# runs here but the database does not (viewer topology).
+pnx_ask_datasource() {
+    local url
+    while true; do
+        url="$(pnx_input "${PNX_TITLE} — Datasource" \
+            "URL of your existing Prometheus-compatible database, as reachable FROM THIS DEVICE.\n\nAny Prometheus query API works: Prometheus, Mimir, VictoriaMetrics, Thanos Query.\n\nExamples:\n  http://192.168.1.10:9090\n  https://prometheus.lab.local\n  http://victoriametrics.lab.local:8428" \
+            "${PNX_GRAFANA_DS_URL}")"
+        if pnx_is_url "${url}"; then
+            PNX_GRAFANA_DS_URL="${url}"
+            break
+        fi
+        pnx_msgbox "${PNX_TITLE} — Datasource" "'${url}' is not a valid http:// or https:// URL."
+    done
+
+    if pnx_yesno "${PNX_TITLE} — Datasource" \
+        "Does that database require a username and password?\n\n(Prometheus behind a reverse proxy, VictoriaMetrics auth, and similar.)" 0; then
+        PNX_GRAFANA_DS_AUTH="basic"
+        PNX_GRAFANA_DS_USER="$(pnx_input "${PNX_TITLE} — Datasource" "Username for the database:" "${PNX_GRAFANA_DS_USER}")"
+        local dp
+        dp="$(pnx_password "${PNX_TITLE} — Datasource" "Password for '${PNX_GRAFANA_DS_USER}':")"
+        [ -n "${dp}" ] && PNX_GRAFANA_DS_PASS="${dp}"
+    else
+        PNX_GRAFANA_DS_AUTH="none"
+    fi
+
+    if [[ "${PNX_GRAFANA_DS_URL}" == https://* ]]; then
+        if pnx_yesno "${PNX_TITLE} — Datasource" \
+            "Does that endpoint use a self-signed or otherwise untrusted TLS certificate?\n\nAnswer No unless you know it does." 0; then
+            PNX_GRAFANA_DS_INSECURE="true"
+        else
+            PNX_GRAFANA_DS_INSECURE="false"
+        fi
+    fi
+
+    # Probe it now so a typo surfaces here, not as an empty dashboard later.
+    local probe="${PNX_GRAFANA_DS_URL%/}/api/v1/query?query=up"
+    local -a args=(-sf --max-time 8)
+    [ "${PNX_GRAFANA_DS_INSECURE}" = "true" ] && args+=(-k)
+    [ "${PNX_GRAFANA_DS_AUTH}" = "basic" ] && args+=(-u "${PNX_GRAFANA_DS_USER}:${PNX_GRAFANA_DS_PASS}")
+    if curl "${args[@]}" "${probe}" 2>/dev/null | grep -q '"status"[[:space:]]*:[[:space:]]*"success"'; then
+        pnx_msgbox "${PNX_TITLE} — Datasource" "Connected to the database successfully."
+    else
+        pnx_yesno "${PNX_TITLE} — Datasource" \
+            "Could not query ${PNX_GRAFANA_DS_URL} from this device.\n\nThat may just mean it is unreachable right now, or does not allow queries from here yet.\n\nContinue anyway?" 1 || exit 0
+    fi
+}
+
+# EXPOSED=1 means something off this device must query Prometheus (backend
+# topology), so binding to the network is the default rather than the option.
+pnx_ask_prometheus() {
+    local exposed="${1:-0}"
 
     PNX_PROM_RETENTION="$(pnx_input "${PNX_TITLE} — Prometheus" \
         "How long should metrics history be kept?\n\nExamples: 15d, 30d, 90d, 1y.\n\nOn an SD card, keeping this modest protects the card's lifespan." \
@@ -226,15 +283,24 @@ pnx_ask_local() {
         "Maximum on-disk size for the metrics database?\n\nExamples: 512MB, 2GB, 10GB. Whichever limit is hit first — time or size — wins." \
         "${PNX_PROM_RETENTION_SIZE}")"
 
-    if pnx_yesno "${PNX_TITLE} — Prometheus" \
-        "Should the Prometheus web interface (port ${PNX_PROM_PORT}) also be reachable from the network?\n\nGrafana talks to Prometheus over loopback regardless, so answering No is the safer choice and still gives you a working dashboard." 0; then
-        PNX_PROM_BIND="0.0.0.0"
+    if [ "${exposed}" = "1" ]; then
+        PNX_PROM_PORT="$(pnx_prompt_port "${PNX_TITLE} — Prometheus" \
+            "Which port should Prometheus serve queries on?\n\nYour existing Grafana will use this as its datasource port." \
+            "${PNX_PROM_PORT}")"
+        local bind
+        bind="$(pnx_menu "${PNX_TITLE} — Prometheus" \
+            "Your Grafana elsewhere must be able to query this Prometheus.\n\nWho may reach it?" \
+            "0.0.0.0"   "Any machine on the network (required unless you tunnel)" \
+            "127.0.0.1" "This device only — you will reach it via SSH tunnel or VPN")"
+        PNX_PROM_BIND="${bind:-0.0.0.0}"
     else
-        PNX_PROM_BIND="127.0.0.1"
+        if pnx_yesno "${PNX_TITLE} — Prometheus" \
+            "Should the Prometheus web interface (port ${PNX_PROM_PORT}) also be reachable from the network?\n\nGrafana talks to Prometheus over loopback regardless, so answering No is the safer choice and still gives you a working dashboard." 0; then
+            PNX_PROM_BIND="0.0.0.0"
+        else
+            PNX_PROM_BIND="127.0.0.1"
+        fi
     fi
-
-    # In local mode nothing off-box needs node_exporter directly.
-    PNX_NODE_EXPORTER_BIND="127.0.0.1"
 }
 
 # --- Interview: agent mode ----------------------------------------------
@@ -310,20 +376,50 @@ pnx_ask_agent() {
 
 # --- Interview driver ----------------------------------------------------
 pnx_interview() {
-    local mode
-    mode="$(pnx_menu "${PNX_TITLE}" \
-        "How do you want to monitor this PiNodeXMR?" \
-        "local" "Run Grafana + Prometheus on this device" \
-        "agent" "Report to a Grafana stack running elsewhere")"
-    PNX_MODE="${mode:-local}"
+    local topo
+    topo="$(pnx_menu "${PNX_TITLE}" \
+        "Where should each piece run?\n\nMetrics collection always runs on this device; Grafana (the dashboard) and Prometheus (the database) can each live here or elsewhere." \
+        "full"    "Everything on this device (Grafana + Prometheus)" \
+        "backend" "Database here — I already have Grafana elsewhere" \
+        "viewer"  "Grafana here — I already have a database elsewhere" \
+        "agent"   "Neither — just report metrics to a stack elsewhere")"
+
+    case "${topo:-full}" in
+        full)    PNX_INSTALL_PROMETHEUS="true";  PNX_INSTALL_GRAFANA="true"  ;;
+        backend) PNX_INSTALL_PROMETHEUS="true";  PNX_INSTALL_GRAFANA="false" ;;
+        viewer)  PNX_INSTALL_PROMETHEUS="false"; PNX_INSTALL_GRAFANA="true"  ;;
+        agent)   PNX_INSTALL_PROMETHEUS="false"; PNX_INSTALL_GRAFANA="false" ;;
+    esac
 
     pnx_ask_instance_name
     pnx_ask_rpc
     pnx_ask_interval
 
-    case "${PNX_MODE}" in
-        local) pnx_ask_local ;;
-        agent) pnx_ask_agent ;;
+    case "${topo:-full}" in
+        full)
+            pnx_ask_stack_flavour "Prometheus and Grafana"
+            pnx_ask_grafana
+            PNX_GRAFANA_DS_URL=""   # dashboard reads the local Prometheus
+            pnx_ask_prometheus 0
+            PNX_NODE_EXPORTER_BIND="127.0.0.1"
+            ;;
+        backend)
+            pnx_ask_stack_flavour "Prometheus"
+            pnx_ask_prometheus 1
+            PNX_NODE_EXPORTER_BIND="127.0.0.1"
+            ;;
+        viewer)
+            pnx_ask_stack_flavour "Grafana"
+            pnx_ask_grafana
+            pnx_ask_datasource
+            # The remote database still needs this device's metrics.
+            pnx_msgbox "${PNX_TITLE}" \
+                "Grafana here will read from your existing database — but that database also needs to RECEIVE this device's metrics.\n\nNext, choose how the metrics get there (push works from behind NAT; pull means your database's Prometheus scrapes this device)."
+            pnx_ask_agent
+            ;;
+        agent)
+            pnx_ask_agent
+            ;;
     esac
 
     pnx_ask_firewall
@@ -352,25 +448,29 @@ pnx_do_install() {
     pnx_exporter_verify
     local exporter_state=$?
 
-    pnx_info "--- Step 4/4: ${PNX_MODE} mode ---"
-    case "${PNX_MODE}" in
-        local)
-            case "${PNX_LOCAL_STACK}" in
-                native) pnx_stack_native_install || pnx_die "Native stack installation failed." ;;
-                docker) pnx_stack_docker_install || pnx_die "Docker stack installation failed." ;;
-            esac
-            ;;
-        agent)
-            pnx_agent_install || pnx_die "Agent setup failed."
-            case "${PNX_AGENT_TRANSPORT}" in
-                push|both) pnx_agent_verify_push ;;
-            esac
-            ;;
-    esac
+    pnx_info "--- Step 4/4: $(pnx_mode_name) ---"
+
+    # Local components, if any (each installer honours the two switches).
+    if [ "${PNX_INSTALL_PROMETHEUS}" = "true" ] || [ "${PNX_INSTALL_GRAFANA}" = "true" ]; then
+        case "${PNX_LOCAL_STACK}" in
+            native) pnx_stack_native_install || pnx_die "Native stack installation failed." ;;
+            docker) pnx_stack_docker_install || pnx_die "Docker stack installation failed." ;;
+        esac
+    fi
+
+    # No database on this device means metrics must leave it — pull, push or
+    # both, exactly as in pure agent setups.
+    if [ "${PNX_INSTALL_PROMETHEUS}" != "true" ]; then
+        pnx_agent_install || pnx_die "Metrics transport setup failed."
+        case "${PNX_AGENT_TRANSPORT}" in
+            push|both) pnx_agent_verify_push ;;
+        esac
+    fi
 
     # The Grafana admin password has been applied to Grafana's own database by
-    # now, so drop the plaintext copy from the config file.
-    if [ -n "${PNX_GRAFANA_ADMIN_PASS}" ] && [ "${PNX_LOCAL_STACK}" = "native" ]; then
+    # now, so drop the plaintext copy from the config file. (The Docker
+    # flavour keeps it as a compose secret file instead.)
+    if [ -n "${PNX_GRAFANA_ADMIN_PASS}" ] && [ "${PNX_INSTALL_GRAFANA}" = "true" ] && [ "${PNX_LOCAL_STACK}" = "native" ]; then
         PNX_GRAFANA_ADMIN_PASS=""
     fi
     pnx_config_save
@@ -382,7 +482,7 @@ pnx_report() {
     local exporter_state="${1:-0}"
     local ip msg
     ip="$(pnx_primary_ip)"
-    msg="Installation complete.\n\n"
+    msg="Installation complete — $(pnx_mode_name).\n\n"
 
     case "${exporter_state}" in
         0) msg+="monerod exporter: healthy, metrics flowing\n" ;;
@@ -390,17 +490,37 @@ pnx_report() {
         *) msg+="monerod exporter: installed, no metrics observed yet\n" ;;
     esac
 
-    if [ "${PNX_MODE}" = "local" ]; then
+    # --- Grafana on this device ---
+    if [ "${PNX_INSTALL_GRAFANA}" = "true" ]; then
         local host="${ip}"
         [ "${PNX_GRAFANA_BIND}" = "127.0.0.1" ] && host="127.0.0.1"
         msg+="\nGrafana:    http://${host}:${PNX_GRAFANA_PORT}\n"
         msg+="Login:      ${PNX_GRAFANA_ADMIN_USER} / (the password you set)\n"
         msg+="Dashboard:  already provisioned under the 'PiNodeXMR' folder —\n            no manual import or datasource picking needed.\n"
+        if [ -n "${PNX_GRAFANA_DS_URL}" ]; then
+            msg+="Datasource: ${PNX_GRAFANA_DS_URL}\n"
+        fi
         if [ "${PNX_GRAFANA_BIND}" = "127.0.0.1" ]; then
             msg+="\nGrafana is bound to localhost. Reach it with:\n  ssh -L ${PNX_GRAFANA_PORT}:127.0.0.1:${PNX_GRAFANA_PORT} pinodexmr@${ip}\nthen browse to http://127.0.0.1:${PNX_GRAFANA_PORT}\n"
         fi
-    else
-        msg+="\nMode: agent (${PNX_AGENT_TRANSPORT})\n"
+    fi
+
+    # --- Prometheus on this device, dashboard elsewhere ---
+    if [ "${PNX_INSTALL_PROMETHEUS}" = "true" ] && [ "${PNX_INSTALL_GRAFANA}" != "true" ]; then
+        msg+="\nDatabase ready. In your existing Grafana:\n"
+        msg+="  1. Add a Prometheus datasource:  http://${ip}:${PNX_PROM_PORT}\n"
+        msg+="  2. Import dashboards/pinodexmr-dashboard.json and select it\n"
+        if [ "${PNX_PROM_BIND}" = "127.0.0.1" ]; then
+            msg+="\nNote: Prometheus is bound to localhost, so your Grafana will need\nan SSH tunnel or VPN to reach it:\n  ssh -L ${PNX_PROM_PORT}:127.0.0.1:${PNX_PROM_PORT} pinodexmr@${ip}\n"
+        fi
+        printf 'Add this datasource to your Grafana:\n  URL: http://%s:%s\n  Type: Prometheus\n\nThen import dashboards/pinodexmr-dashboard.json and pick it when asked.\n' \
+            "${ip}" "${PNX_PROM_PORT}" > "${PNX_STATE_DIR}/remote-grafana-setup.txt"
+        msg+="\nThese steps are also saved in:\n  ${PNX_STATE_DIR}/remote-grafana-setup.txt\n"
+    fi
+
+    # --- Metrics leaving the device (no local database) ---
+    if [ "${PNX_INSTALL_PROMETHEUS}" != "true" ]; then
+        msg+="\nMetrics transport: ${PNX_AGENT_TRANSPORT}\n"
         case "${PNX_AGENT_TRANSPORT}" in
             pull|both)
                 msg+="\nScrape this device at:  ${ip}:${PNX_NODE_EXPORTER_PORT}\n"
@@ -414,7 +534,9 @@ pnx_report() {
                 msg+="Check it with: journalctl -u prometheus-agent -f\n"
                 ;;
         esac
-        msg+="\nImport dashboards/pinodexmr-dashboard.json into your remote Grafana\nand point it at the Prometheus receiving these metrics.\n"
+        if [ "${PNX_INSTALL_GRAFANA}" != "true" ]; then
+            msg+="\nImport dashboards/pinodexmr-dashboard.json into your remote Grafana\nand point it at the database receiving these metrics.\n"
+        fi
     fi
 
     msg+="\nConfig:  ${PNX_CONF_FILE}\nLog:     ${PNX_LOG_FILE}\nStatus:  sudo ${PNX_SRC_DIR}/install.sh --status\n"
@@ -450,7 +572,7 @@ pnx_status() {
         fi
     done
 
-    if [ "${PNX_MODE}" = "local" ] && [ "${PNX_LOCAL_STACK}" = "docker" ]; then
+    if { [ "${PNX_INSTALL_PROMETHEUS}" = "true" ] || [ "${PNX_INSTALL_GRAFANA}" = "true" ]; } && [ "${PNX_LOCAL_STACK}" = "docker" ]; then
         out+="\nContainers:\n"
         local c
         c="$( (cd "${PNX_DOCKER_DIR}" 2>/dev/null && pnx_compose ps --format '  {{.Name}}: {{.State}}' 2>/dev/null) )"

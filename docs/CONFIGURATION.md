@@ -19,12 +19,25 @@ restart at all, because the exporter re-reads this file every cycle.
 
 ## Deployment
 
+Grafana and Prometheus are independent switches, giving four topologies:
+
+| `PNX_INSTALL_PROMETHEUS` | `PNX_INSTALL_GRAFANA` | Topology |
+|:---:|:---:|---|
+| `true` | `true` | **full** — all-in-one on this device |
+| `true` | `false` | **backend** — database here, dashboard in your existing Grafana |
+| `false` | `true` | **viewer** — dashboard here, database in your existing lab |
+| `false` | `false` | **agent** — metrics only, everything elsewhere |
+
 | Variable | Default | Meaning |
 |---|---|---|
-| `PNX_MODE` | `local` | `local` (stack on this device) or `agent` (report elsewhere) |
-| `PNX_LOCAL_STACK` | `native` | `native` or `docker`. Local mode only |
-| `PNX_AGENT_TRANSPORT` | `pull` | `pull`, `push` or `both`. Agent mode only |
+| `PNX_INSTALL_PROMETHEUS` | `true` | Run the metrics database on this device |
+| `PNX_INSTALL_GRAFANA` | `true` | Run the dashboard on this device |
+| `PNX_LOCAL_STACK` | `native` | `native` or `docker`, for whichever components run here |
+| `PNX_AGENT_TRANSPORT` | `pull` | `pull`, `push` or `both` — how metrics leave the device when Prometheus is **not** local |
 | `PNX_INSTANCE_NAME` | `pinodexmr` | Label for this node; what the dashboard's `instance` dropdown shows |
+
+Configs written by older versions (which stored `PNX_MODE=local|agent`) are
+migrated automatically on load.
 
 ## monerod RPC
 
@@ -153,9 +166,26 @@ The generated file:
 /etc/grafana/provisioning/datasources/pinodexmr.yml
 ```
 
+Where it points is configurable — the local Prometheus by default, or any
+existing Prometheus-compatible database (viewer topology):
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `PNX_GRAFANA_DS_URL` | *(empty)* | Empty = the locally managed Prometheus. Set a URL to use an existing database: Prometheus, Mimir, VictoriaMetrics, Thanos Query |
+| `PNX_GRAFANA_DS_AUTH` | `none` | `none` or `basic` |
+| `PNX_GRAFANA_DS_USER` | *(empty)* | Basic auth username |
+| `PNX_GRAFANA_DS_PASS` | *(empty)* | Basic auth password |
+| `PNX_GRAFANA_DS_INSECURE` | `false` | Skip TLS verification for a self-signed database endpoint (discouraged) |
+
+The dashboard queries are PromQL, so "database" means anything speaking the
+Prometheus query API — which is also what Grafana Cloud's hosted metrics,
+Mimir, VictoriaMetrics and Thanos expose.
+
 ### Pointing the dashboard at a different Prometheus
 
-Edit the `url:` in that file and restart Grafana:
+Set `PNX_GRAFANA_DS_URL` in the config and re-run
+`sudo ./install.sh --unattended`, or edit the `url:` in the generated file and
+restart Grafana:
 
 ```bash
 sudo nano /etc/grafana/provisioning/datasources/pinodexmr.yml

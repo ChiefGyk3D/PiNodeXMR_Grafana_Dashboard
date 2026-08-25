@@ -51,7 +51,7 @@ pnx_stack_docker_install() {
     pnx_docker_install || return 1
 
     local dir="${PNX_DOCKER_DIR}"
-    mkdir -p "${dir}/prometheus" "${dir}/grafana/provisioning" "${dir}/grafana/dashboards" "${dir}/secrets"
+    mkdir -p "${dir}"
 
     # Containers run as a dedicated unprivileged user so the bind-mounted
     # provisioning files are never owned by root inside the container.
@@ -60,31 +60,51 @@ pnx_stack_docker_install() {
     puid="$(id -u pinodexmr-mon)"
     pgid="$(id -g pinodexmr-mon)"
 
-    # --- Prometheus config ---
-    # Containers reach the host's node_exporter through the host-gateway alias
-    # declared in the compose file.
-    pnx_render "${PNX_SRC_DIR}/templates/prometheus.yml.tmpl" "${dir}/prometheus/prometheus.yml" \
-        "SCRAPE_INTERVAL=${PNX_PROM_SCRAPE_INTERVAL}" \
-        "NODE_EXPORTER_TARGET=host.docker.internal:${PNX_NODE_EXPORTER_PORT}" \
-        "INSTANCE_NAME=${PNX_INSTANCE_NAME}" \
-        "PROM_PORT=9090"
+    # --- Prometheus config (only when the database runs here) ---
+    if [ "${PNX_INSTALL_PROMETHEUS}" = "true" ]; then
+        mkdir -p "${dir}/prometheus"
+        # Containers reach the host's node_exporter through the host-gateway
+        # alias declared in the compose file.
+        pnx_render "${PNX_SRC_DIR}/templates/prometheus.yml.tmpl" "${dir}/prometheus/prometheus.yml" \
+            "SCRAPE_INTERVAL=${PNX_PROM_SCRAPE_INTERVAL}" \
+            "NODE_EXPORTER_TARGET=host.docker.internal:${PNX_NODE_EXPORTER_PORT}" \
+            "INSTANCE_NAME=${PNX_INSTANCE_NAME}" \
+            "PROM_PORT=9090"
+    fi
 
-    # --- Grafana provisioning ---
-    # Host paths are where we write; the container sees the dashboards at a
-    # fixed mount point, which is what the provider file must reference.
-    # Consumed by pnx_provision_grafana in lib/provision.sh.
-    # shellcheck disable=SC2034
-    PNX_DASHBOARD_DIR_INTERNAL="/var/lib/grafana/dashboards"
-    pnx_provision_grafana \
-        "${dir}/grafana/provisioning" \
-        "${dir}/grafana/dashboards" \
-        "http://prometheus:9090" || return 1
+    # --- Grafana provisioning (only when the dashboard runs here) ---
+    if [ "${PNX_INSTALL_GRAFANA}" = "true" ]; then
+        mkdir -p "${dir}/grafana/provisioning" "${dir}/grafana/dashboards" "${dir}/secrets"
 
-    # --- Admin password secret ---
-    printf '%s' "${PNX_GRAFANA_ADMIN_PASS}" > "${dir}/secrets/grafana_admin_password"
-    chmod 0600 "${dir}/secrets/grafana_admin_password"
+        # The datasource URL as seen FROM INSIDE the Grafana container: the
+        # sibling Prometheus service when it exists, otherwise the existing
+        # database elsewhere in the lab.
+        local ds_url="${PNX_GRAFANA_DS_URL}"
+        if [ -z "${ds_url}" ]; then
+            if [ "${PNX_INSTALL_PROMETHEUS}" = "true" ]; then
+                ds_url="http://prometheus:9090"
+            else
+                pnx_error "Grafana selected without a local Prometheus and no datasource URL set (PNX_GRAFANA_DS_URL)"
+                return 1
+            fi
+        fi
 
-    # --- Compose file ---
+        # Host paths are where we write; the container sees the dashboards at
+        # a fixed mount point, which is what the provider file must reference.
+        # Consumed by pnx_provision_grafana in lib/provision.sh.
+        # shellcheck disable=SC2034
+        PNX_DASHBOARD_DIR_INTERNAL="/var/lib/grafana/dashboards"
+        pnx_provision_grafana \
+            "${dir}/grafana/provisioning" \
+            "${dir}/grafana/dashboards" \
+            "${ds_url}" || return 1
+
+        # --- Admin password secret ---
+        printf '%s' "${PNX_GRAFANA_ADMIN_PASS}" > "${dir}/secrets/grafana_admin_password"
+        chmod 0600 "${dir}/secrets/grafana_admin_password"
+    fi
+
+    # --- Compose file: render, then strip the unselected components ---
     pnx_render "${PNX_SRC_DIR}/templates/docker-compose.yml.tmpl" "${dir}/docker-compose.yml" \
         "DOCKER_DIR=${dir}" \
         "PROM_IMAGE=${PNX_DOCKER_PROM_IMAGE}" \
@@ -99,8 +119,14 @@ pnx_stack_docker_install() {
         "PUID=${puid}" \
         "PGID=${pgid}"
 
-    chown -R "${puid}:${pgid}" "${dir}/grafana" "${dir}/prometheus" "${dir}/secrets"
-    chmod 0750 "${dir}/secrets"
+    [ "${PNX_INSTALL_PROMETHEUS}" = "true" ] || pnx_strip_section "${dir}/docker-compose.yml" PROMETHEUS
+    [ "${PNX_INSTALL_GRAFANA}" = "true" ]    || pnx_strip_section "${dir}/docker-compose.yml" GRAFANA
+    # Grafana's depends_on only makes sense when the Prometheus service exists.
+    [ "${PNX_INSTALL_PROMETHEUS}" = "true" ] || pnx_strip_section "${dir}/docker-compose.yml" GRAFANA_DEPENDS
+    pnx_clear_section_markers "${dir}/docker-compose.yml"
+
+    chown -R "${puid}:${pgid}" "${dir}"
+    [ -d "${dir}/secrets" ] && chmod 0750 "${dir}/secrets"
 
     pnx_info "Starting the monitoring containers (first run pulls images)"
     ( cd "${dir}" && pnx_compose up -d ) || {
@@ -108,10 +134,13 @@ pnx_stack_docker_install() {
         return 1
     }
 
-    pnx_grafana_wait "${PNX_GRAFANA_BIND}" "${PNX_GRAFANA_PORT}" || true
-
-    [ "${PNX_GRAFANA_BIND}" != "127.0.0.1" ] && pnx_firewall_allow "${PNX_GRAFANA_PORT}" "pinodexmr-grafana"
-    [ "${PNX_PROM_BIND}" != "127.0.0.1" ] && pnx_firewall_allow "${PNX_PROM_PORT}" "pinodexmr-prometheus"
+    if [ "${PNX_INSTALL_GRAFANA}" = "true" ]; then
+        pnx_grafana_wait "${PNX_GRAFANA_BIND}" "${PNX_GRAFANA_PORT}" || true
+        [ "${PNX_GRAFANA_BIND}" != "127.0.0.1" ] && pnx_firewall_allow "${PNX_GRAFANA_PORT}" "pinodexmr-grafana"
+    fi
+    if [ "${PNX_INSTALL_PROMETHEUS}" = "true" ]; then
+        [ "${PNX_PROM_BIND}" != "127.0.0.1" ] && pnx_firewall_allow "${PNX_PROM_PORT}" "pinodexmr-prometheus"
+    fi
     return 0
 }
 
