@@ -128,6 +128,11 @@ pnx_provision_grafana() {
         "${prov_dir}/dashboards/pinodexmr.yml" \
         "DASHBOARD_DIR=${dash_dir_internal}"
 
+    # pnx_render writes through mktemp, which creates files 0600 — unreadable
+    # by the grafana group, and Grafana refuses to start over an unreadable
+    # provisioning file. Group-read it, as with the datasource above.
+    chmod 0640 "${prov_dir}/dashboards/pinodexmr.yml" 2>/dev/null || true
+
     pnx_dashboard_to_provisioned \
         "${PNX_SRC_DIR}/dashboards/pinodexmr-dashboard.json" \
         "${dash_dir}/pinodexmr-dashboard.json" || return 1

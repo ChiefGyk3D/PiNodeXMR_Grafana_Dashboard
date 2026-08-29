@@ -172,28 +172,60 @@ pnx_grafana_setup() {
     chown -R grafana:grafana /var/lib/grafana/dashboards 2>/dev/null || true
 
     pnx_service_enable_start "${PNX_GRAFANA_UNIT}" || return 1
-    pnx_grafana_wait "${PNX_GRAFANA_BIND}" "${PNX_GRAFANA_PORT}" || true
+    if ! pnx_grafana_wait "${PNX_GRAFANA_BIND}" "${PNX_GRAFANA_PORT}"; then
+        # A Grafana that never answered is not a soft condition: a broken
+        # provisioning file, port clash or bad config leaves it crashlooping
+        # while the rest of the install would report success. Surface it.
+        if ! systemctl is-active --quiet "${PNX_GRAFANA_UNIT}"; then
+            pnx_error "Grafana failed to start. Check: journalctl -u ${PNX_GRAFANA_UNIT}"
+            return 1
+        fi
+        pnx_warn "Grafana is running but did not answer on port ${PNX_GRAFANA_PORT} yet."
+    fi
 
     # Set the admin password after startup: grafana-cli writes the hash into
     # Grafana's own database, so it works on a fresh install and on a re-run,
     # and the plaintext never persists in a config file.
+    #
+    # grafana-cli needs the same config and data path the deb's grafana-server
+    # uses; with only --homepath it silently creates and edits a scratch
+    # database under /usr/share/grafana/data and reports success while the
+    # real admin password is still admin/admin.
+    local -a cli_args=(--config /etc/grafana/grafana.ini
+        --homepath /usr/share/grafana
+        --configOverrides cfg:default.paths.data=/var/lib/grafana)
     if [ -n "${PNX_GRAFANA_ADMIN_PASS}" ]; then
         # Prefer --password-from-stdin (Grafana 9.1+) so the password never
         # touches argv, which is world-readable via /proc. Fall back to the
         # positional form only on older grafana-cli that lacks the flag.
         if printf '%s' "${PNX_GRAFANA_ADMIN_PASS}" | \
-            grafana-cli --homepath /usr/share/grafana admin reset-admin-password --password-from-stdin >/dev/null 2>&1; then
-            pnx_info "Grafana admin password set for user '${PNX_GRAFANA_ADMIN_USER}'"
-        elif grafana-cli --homepath /usr/share/grafana admin reset-admin-password "${PNX_GRAFANA_ADMIN_PASS}" >/dev/null 2>&1; then
-            pnx_info "Grafana admin password set for user '${PNX_GRAFANA_ADMIN_USER}'"
+            grafana-cli "${cli_args[@]}" admin reset-admin-password --password-from-stdin >/dev/null 2>&1; then
+            pnx_grafana_verify_admin_pass
+        elif grafana-cli "${cli_args[@]}" admin reset-admin-password "${PNX_GRAFANA_ADMIN_PASS}" >/dev/null 2>&1; then
+            pnx_grafana_verify_admin_pass
         else
             pnx_warn "Could not set the Grafana admin password automatically."
-            pnx_warn "Set it manually: sudo grafana-cli --homepath /usr/share/grafana admin reset-admin-password --password-from-stdin"
+            pnx_warn "Set it manually: sudo grafana-cli --config /etc/grafana/grafana.ini --homepath /usr/share/grafana --configOverrides cfg:default.paths.data=/var/lib/grafana admin reset-admin-password --password-from-stdin"
         fi
     fi
 
     [ "${PNX_GRAFANA_BIND}" != "127.0.0.1" ] && pnx_firewall_allow "${PNX_GRAFANA_PORT}" "pinodexmr-grafana"
     return 0
+}
+
+# grafana-cli can exit 0 having written somewhere other than the database the
+# server reads (see the scratch-database note above), so trust only a real
+# authenticated request. Never fatal — Grafana may still be warming up.
+pnx_grafana_verify_admin_pass() {
+    local code
+    code="$(curl -s -o /dev/null -w '%{http_code}' --max-time 8 \
+        -u "${PNX_GRAFANA_ADMIN_USER}:${PNX_GRAFANA_ADMIN_PASS}" \
+        "http://127.0.0.1:${PNX_GRAFANA_PORT}/api/org" 2>/dev/null)"
+    case "${code}" in
+        200) pnx_info "Grafana admin password set and verified for user '${PNX_GRAFANA_ADMIN_USER}'" ;;
+        401|403) pnx_warn "Grafana did not accept the admin password that was just set — it may still be on its previous credentials. Set it manually if login fails." ;;
+        *) pnx_info "Grafana admin password set for user '${PNX_GRAFANA_ADMIN_USER}' (verification skipped: Grafana not answering yet)" ;;
+    esac
 }
 
 # Set KEY=VALUE in an environment file, replacing any existing definition.
