@@ -340,6 +340,7 @@ pnx_curl_auth_config() {
     case "${auth}" in
         none) return 0 ;;
         basic) ;;
+        auto) printf 'anyauth\n' ;;   # credentials only if monerod asks (401)
         *) printf 'digest\n' ;;
     esac
     user="${user//\\/\\\\}"; pass="${pass//\\/\\\\}"

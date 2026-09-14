@@ -31,6 +31,15 @@ into a second file. Those files are **parsed, never sourced** — the installer
 runs as root and the files are writable by the unprivileged `pinodexmr`
 account, so executing them would be a privilege-escalation path.
 
+On PiNodeXMR the exporter authenticates with curl's `--anyauth` ("auto"): the
+credentials are only sent when monerod answers 401, because the Public Free and
+Tor Public modes run monerod with no RPC login at all. curl still picks digest
+when challenged (monerod offers nothing weaker), and the traffic goes to the
+device's own address, so it never leaves the host. On a non-PiNodeXMR host
+talking to a remote monerod, set `PNX_RPC_AUTH=digest` explicitly rather than
+`auto` so a hostile endpoint cannot ask for basic auth and receive the password
+in the clear.
+
 **Credentials are never placed on a command line.** `curl` is authenticated
 through a config passed on a file descriptor, not `-u` on the command line,
 because a process's arguments are world-readable via `/proc/<pid>/cmdline` and

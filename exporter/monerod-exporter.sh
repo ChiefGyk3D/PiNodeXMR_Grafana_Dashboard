@@ -60,11 +60,18 @@ load_config() {
         # monerod binds the device's LAN address on PiNodeXMR, not loopback.
         RPC_HOST="$(hostname -I 2>/dev/null | awk '{print $1}')"
         [ -z "${RPC_HOST}" ] && RPC_HOST="127.0.0.1"
+        # Whether monerod enforces the RPC login depends on the node mode, not
+        # on the variable files: Private/Mining/I2P/Tor-Private start monerod
+        # with --rpc-login, while Public Free and Tor Public serve the
+        # restricted RPC with no login at all. "auto" sends the credentials
+        # only if monerod challenges for them, so one config covers every mode.
+        RPC_AUTH="auto"
     else
         RPC_USER="${PNX_RPC_USER}"
         RPC_PASS="${PNX_RPC_PASS}"
         RPC_PORT="${PNX_RPC_PORT}"
         RPC_HOST="${PNX_RPC_HOST}"
+        RPC_AUTH="${PNX_RPC_AUTH}"
     fi
 
     PROM_FILE="${PNX_TEXTFILE_DIR}/monerod.prom"
@@ -77,10 +84,18 @@ load_config() {
 # --config on a process-substitution FD, NEVER on the command line: argv is
 # world-readable through /proc/<pid>/cmdline, and this is a long-running
 # service that would otherwise expose the RPC credentials on every poll.
+#
+# "auto" maps to curl's --anyauth: the request goes out unauthenticated and the
+# credentials are only sent (as digest, the sole scheme monerod offers) if the
+# daemon answers 401. A plain --digest cannot do that: curl then sends a
+# body-less probe first, expecting the 401, and when a no-login monerod answers
+# the probe with 200 instead, curl --fail gives up with "(22) HTTP response
+# code said error" and never returns the JSON.
 rpc_auth_config() {
-    case "${PNX_RPC_AUTH}" in
+    case "${RPC_AUTH}" in
         none) return 0 ;;
         basic) ;;
+        auto) printf 'anyauth\n' ;;
         *) printf 'digest\n' ;;
     esac
     # curl config double-quoted strings honour \" and \\ escapes; escape both
@@ -436,7 +451,7 @@ mkdir -p "${PNX_TEXTFILE_DIR}" 2>/dev/null || true
 # Clean up our temp file if we are killed mid-write.
 trap 'rm -f "${TEMP_FILE:-}"; exit 0' TERM INT
 
-echo "monerod-exporter: starting (interval=${INTERVAL}s, rpc=${RPC_HOST}:${RPC_PORT}, auth=${PNX_RPC_AUTH}, textfile=${PNX_TEXTFILE_DIR})"
+echo "monerod-exporter: starting (interval=${INTERVAL}s, rpc=${RPC_HOST}:${RPC_PORT}, auth=${RPC_AUTH}, textfile=${PNX_TEXTFILE_DIR})"
 
 # --- Main loop -----------------------------------------------------------
 while true; do

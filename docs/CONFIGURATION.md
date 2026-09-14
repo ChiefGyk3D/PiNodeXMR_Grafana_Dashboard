@@ -49,7 +49,7 @@ migrated automatically on load.
 | `PNX_RPC_PORT` | `18081` | ” |
 | `PNX_RPC_USER` | *(empty)* | ” |
 | `PNX_RPC_PASS` | *(empty)* | ” |
-| `PNX_RPC_AUTH` | `digest` | `digest`, `basic` or `none` |
+| `PNX_RPC_AUTH` | `digest` | `digest`, `basic`, `none` or `auto` (send credentials only if monerod asks). Ignored when `PNX_RPC_FROM_PINODEXMR=true`, which always uses `auto` |
 
 ### Changing your RPC credentials
 
@@ -59,6 +59,22 @@ the exporter picks the new values up on its next poll. No restart, no edit here.
 
 If you set credentials manually, update `PNX_RPC_USER` / `PNX_RPC_PASS` here and
 the next poll uses them.
+
+### Node modes and RPC login
+
+Not every PiNodeXMR node mode makes monerod enforce the RPC login:
+
+| Node mode | monerod RPC the exporter reaches | Login enforced |
+|---|---|---|
+| Private, Mining, I2P Private, Tor Private | `<device IP>:18081`, unrestricted | yes (`--rpc-login`) |
+| Tor Public | `<device IP>:18081`, restricted | no |
+| Public Free | `<device IP>:18081`, restricted | no |
+
+With `PNX_RPC_FROM_PINODEXMR=true` the exporter always talks to port 18081 from
+`monero-port.sh` and uses `auto` authentication, so switching node modes needs
+no change here. Everything the exporter queries (`get_info`,
+`get_fee_estimate`, `hard_fork_info`, `get_last_block_header`,
+`get_transaction_pool_stats`) is available on a restricted RPC.
 
 ## Exporter
 

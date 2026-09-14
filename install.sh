@@ -104,6 +104,7 @@ pnx_ask_rpc() {
         auth="$(pnx_menu "${PNX_TITLE} — monerod RPC" "How is the monerod RPC authenticated?" \
             "digest" "HTTP digest auth (monerod default with --rpc-login)" \
             "basic"  "HTTP basic auth (behind a reverse proxy)" \
+            "auto"   "Send credentials only if monerod asks (works with or without --rpc-login)" \
             "none"   "No authentication")"
         PNX_RPC_AUTH="${auth:-digest}"
 
@@ -125,12 +126,16 @@ pnx_test_rpc_now() {
         pnx_apt_install jq curl >/dev/null 2>&1 || return 0
     }
 
-    local rpc host port user pass height
+    local rpc host port user pass auth height
     rpc="$(pnx_exporter_effective_rpc)"
     IFS=$'\t' read -r host port user pass <<< "${rpc}"
+    # Same rule as the exporter: on PiNodeXMR the node mode decides whether
+    # monerod wants a login, so send credentials only when challenged.
+    auth="${PNX_RPC_AUTH}"
+    [ "${PNX_RPC_FROM_PINODEXMR}" = "true" ] && auth="auto"
 
-    pnx_info "Testing monerod RPC at ${host}:${port} (auth: ${PNX_RPC_AUTH})"
-    if height="$(pnx_exporter_test_rpc "${host}" "${port}" "${user}" "${pass}" "${PNX_RPC_AUTH}")"; then
+    pnx_info "Testing monerod RPC at ${host}:${port} (auth: ${auth})"
+    if height="$(pnx_exporter_test_rpc "${host}" "${port}" "${user}" "${pass}" "${auth}")"; then
         pnx_msgbox "${PNX_TITLE} — monerod RPC" "Connected to monerod successfully.\n\nBlockchain height: ${height}"
         return 0
     fi

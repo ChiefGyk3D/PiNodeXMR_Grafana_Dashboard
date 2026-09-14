@@ -98,7 +98,7 @@ source /home/pinodexmr/variables/RPCu.sh
 source /home/pinodexmr/variables/RPCp.sh
 source /home/pinodexmr/variables/monero-port.sh
 IP=$(hostname -I | awk '{print $1}')
-curl -sf -u "${RPCu}:${RPCp}" --digest -X POST "http://${IP}:${MONERO_PORT}/json_rpc" \
+curl -sf -u "${RPCu}:${RPCp}" --anyauth -X POST "http://${IP}:${MONERO_PORT}/json_rpc" \
   -d '{"jsonrpc":"2.0","id":"0","method":"get_info"}' \
   -H 'Content-Type: application/json' | jq .result.height
 ```
@@ -107,6 +107,7 @@ curl -sf -u "${RPCu}:${RPCp}" --digest -X POST "http://${IP}:${MONERO_PORT}/json
 |---|---|
 | A height | RPC is fine — check the exporter's own logs below |
 | `401` | Wrong username/password, or wrong auth type. Check `PNX_RPC_AUTH` |
+| `curl: (22)` with `--digest` | monerod is running without `--rpc-login` (Public Free and Tor Public modes). Use `--anyauth`, or `PNX_RPC_AUTH=auto` on a non-PiNodeXMR host |
 | Connection refused | monerod is not listening on that address/port |
 | Empty / hangs | monerod is still starting, or busy syncing |
 
