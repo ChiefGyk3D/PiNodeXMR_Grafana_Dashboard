@@ -92,10 +92,13 @@ pnx_exporter_effective_rpc() {
         pass="$(pnx_read_var_file "${PNX_PINODEXMR_VAR_DIR}/RPCp.sh" RPCp)"
         port="$(pnx_read_var_file "${PNX_PINODEXMR_VAR_DIR}/monero-port.sh" MONERO_PORT)"
         [ -z "${port}" ] && port="18081"
-        host="$(pnx_primary_ip)"; [ -z "${host}" ] && host="127.0.0.1"
+        host="$(pnx_primary_ip)"
+        [ -z "${host}" ] && host="127.0.0.1"
     else
-        host="${PNX_RPC_HOST}"; port="${PNX_RPC_PORT}"
-        user="${PNX_RPC_USER}"; pass="${PNX_RPC_PASS}"
+        host="${PNX_RPC_HOST}"
+        port="${PNX_RPC_PORT}"
+        user="${PNX_RPC_USER}"
+        pass="${PNX_RPC_PASS}"
     fi
     printf '%s\t%s\t%s\t%s' "${host}" "${port}" "${user}" "${pass}"
 }

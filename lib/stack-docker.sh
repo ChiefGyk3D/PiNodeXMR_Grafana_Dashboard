@@ -30,8 +30,15 @@ pnx_docker_install() {
         pnx_info "Installing Docker Engine via get.docker.com (this takes a while on an SBC)"
         local script
         script="$(mktemp)"
-        pnx_download "https://get.docker.com" "${script}" || { rm -f "${script}"; return 1; }
-        sh "${script}" || { rm -f "${script}"; pnx_error "Docker installation failed"; return 1; }
+        pnx_download "https://get.docker.com" "${script}" || {
+            rm -f "${script}"
+            return 1
+        }
+        sh "${script}" || {
+            rm -f "${script}"
+            pnx_error "Docker installation failed"
+            return 1
+        }
         rm -f "${script}"
         systemctl enable --now docker >/dev/null 2>&1 || true
     fi
@@ -43,7 +50,10 @@ pnx_docker_install() {
         }
     fi
 
-    command -v docker >/dev/null 2>&1 || { pnx_error "Docker is still not available"; return 1; }
+    command -v docker >/dev/null 2>&1 || {
+        pnx_error "Docker is still not available"
+        return 1
+    }
     return 0
 }
 
@@ -101,7 +111,7 @@ pnx_stack_docker_install() {
             "${ds_url}" || return 1
 
         # --- Admin password secret ---
-        printf '%s' "${PNX_GRAFANA_ADMIN_PASS}" > "${dir}/secrets/grafana_admin_password"
+        printf '%s' "${PNX_GRAFANA_ADMIN_PASS}" >"${dir}/secrets/grafana_admin_password"
         chmod 0600 "${dir}/secrets/grafana_admin_password"
     fi
 
@@ -119,7 +129,7 @@ pnx_stack_docker_install() {
         "GRAFANA_ADMIN_USER=${PNX_GRAFANA_ADMIN_USER}"
 
     [ "${PNX_INSTALL_PROMETHEUS}" = "true" ] || pnx_strip_section "${dir}/docker-compose.yml" PROMETHEUS
-    [ "${PNX_INSTALL_GRAFANA}" = "true" ]    || pnx_strip_section "${dir}/docker-compose.yml" GRAFANA
+    [ "${PNX_INSTALL_GRAFANA}" = "true" ] || pnx_strip_section "${dir}/docker-compose.yml" GRAFANA
     # Grafana's depends_on only makes sense when the Prometheus service exists.
     [ "${PNX_INSTALL_PROMETHEUS}" = "true" ] || pnx_strip_section "${dir}/docker-compose.yml" GRAFANA_DEPENDS
     pnx_clear_section_markers "${dir}/docker-compose.yml"
@@ -139,7 +149,7 @@ pnx_stack_docker_install() {
     fi
 
     pnx_info "Starting the monitoring containers (first run pulls images)"
-    ( cd "${dir}" && pnx_compose up -d ) || {
+    (cd "${dir}" && pnx_compose up -d) || {
         pnx_error "docker compose up failed. Inspect with: cd ${dir} && docker compose logs"
         return 1
     }
@@ -158,5 +168,5 @@ pnx_stack_docker_remove() {
     local dir="${PNX_DOCKER_DIR}"
     [ -f "${dir}/docker-compose.yml" ] || return 0
     pnx_info "Stopping and removing the monitoring containers"
-    ( cd "${dir}" && pnx_compose down -v ) || pnx_warn "docker compose down reported errors"
+    (cd "${dir}" && pnx_compose down -v) || pnx_warn "docker compose down reported errors"
 }
