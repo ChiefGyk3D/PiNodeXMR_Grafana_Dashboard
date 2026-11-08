@@ -119,14 +119,22 @@ pnx_config_defaults() {
 pnx_config_load() {
     if [ -f "${PNX_CONF_FILE}" ]; then
         # shellcheck disable=SC1090
-        set -a; . "${PNX_CONF_FILE}"; set +a
+        set -a
+        . "${PNX_CONF_FILE}"
+        set +a
     fi
     # Migrate configs written before the component switches existed, where
     # PNX_MODE=local|agent was the whole story.
     if [ -z "${PNX_INSTALL_PROMETHEUS:-}" ] && [ -n "${PNX_MODE:-}" ]; then
         case "${PNX_MODE}" in
-            local) PNX_INSTALL_PROMETHEUS="true";  PNX_INSTALL_GRAFANA="true"  ;;
-            agent) PNX_INSTALL_PROMETHEUS="false"; PNX_INSTALL_GRAFANA="false" ;;
+            local)
+                PNX_INSTALL_PROMETHEUS="true"
+                PNX_INSTALL_GRAFANA="true"
+                ;;
+            agent)
+                PNX_INSTALL_PROMETHEUS="false"
+                PNX_INSTALL_GRAFANA="false"
+                ;;
         esac
     fi
     pnx_config_defaults
@@ -241,7 +249,7 @@ pnx_config_save() {
         printf '\n# --- Firewall ---\n'
         pnx_conf_line PNX_MANAGE_FIREWALL
         pnx_conf_line PNX_ALLOW_CIDR
-    } > "${tmp}"
+    } >"${tmp}"
 
     # The exporter runs as PNX_EXPORTER_USER and must be able to read this
     # file, so it is group-readable by that user's primary group rather than
@@ -277,10 +285,10 @@ pnx_config_summary() {
     else
         s+="Transport:       ${PNX_AGENT_TRANSPORT}\n"
         case "${PNX_AGENT_TRANSPORT}" in
-            pull|both) s+="Scrape endpoint: ${PNX_NODE_EXPORTER_BIND}:${PNX_NODE_EXPORTER_PORT}\n" ;;
+            pull | both) s+="Scrape endpoint: ${PNX_NODE_EXPORTER_BIND}:${PNX_NODE_EXPORTER_PORT}\n" ;;
         esac
         case "${PNX_AGENT_TRANSPORT}" in
-            push|both) s+="Remote write:    ${PNX_REMOTE_WRITE_URL} (auth: ${PNX_REMOTE_WRITE_AUTH})\n" ;;
+            push | both) s+="Remote write:    ${PNX_REMOTE_WRITE_URL} (auth: ${PNX_REMOTE_WRITE_AUTH})\n" ;;
         esac
     fi
     s+="Instance label:  ${PNX_INSTANCE_NAME}\n"
