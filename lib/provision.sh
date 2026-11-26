@@ -22,7 +22,10 @@ PNX_DS_UID="pinodexmr-prometheus"
 # pnx_dashboard_to_provisioned SRC_JSON DEST_JSON
 pnx_dashboard_to_provisioned() {
     local src="$1" dest="$2"
-    [ -f "${src}" ] || { pnx_error "Dashboard JSON not found: ${src}"; return 1; }
+    [ -f "${src}" ] || {
+        pnx_error "Dashboard JSON not found: ${src}"
+        return 1
+    }
 
     mkdir -p "$(dirname "${dest}")"
 
@@ -42,7 +45,7 @@ pnx_dashboard_to_provisioned() {
             | del(.__inputs)
             | del(.__requires)
             | .id = null
-        ' "${src}" > "${dest}" || {
+        ' "${src}" >"${dest}" || {
             pnx_error "jq failed to transform the dashboard JSON"
             return 1
         }
@@ -50,7 +53,7 @@ pnx_dashboard_to_provisioned() {
         # Fallback: textual substitution. Adequate because the placeholder is
         # a distinctive literal, but jq is installed by the exporter step so
         # this path is rarely taken.
-        sed -e 's/\${DS_PROMETHEUS}/'"${PNX_DS_UID}"'/g' "${src}" > "${dest}"
+        sed -e 's/\${DS_PROMETHEUS}/'"${PNX_DS_UID}"'/g' "${src}" >"${dest}"
     fi
 
     # Sanity-check the output really is valid JSON — a broken dashboard file

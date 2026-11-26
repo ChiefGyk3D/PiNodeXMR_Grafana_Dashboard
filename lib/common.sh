@@ -32,19 +32,20 @@ pnx_have_whiptail() {
 
 # --- Logging -------------------------------------------------------------
 pnx_log() {
-    local level="$1"; shift
+    local level="$1"
+    shift
     local msg="$*"
     local line
     line="$(date -Iseconds) [${level}] ${msg}"
     # Best-effort file logging; never fail the install because logging failed.
     if [ -w "$(dirname "${PNX_LOG_FILE}")" ] 2>/dev/null; then
-        printf '%s\n' "${line}" >> "${PNX_LOG_FILE}" 2>/dev/null || true
+        printf '%s\n' "${line}" >>"${PNX_LOG_FILE}" 2>/dev/null || true
     fi
     printf '%s\n' "${line}" >&2
 }
 
-pnx_info()  { pnx_log INFO  "$@"; }
-pnx_warn()  { pnx_log WARN  "$@"; }
+pnx_info() { pnx_log INFO "$@"; }
+pnx_warn() { pnx_log WARN "$@"; }
 pnx_error() { pnx_log ERROR "$@"; }
 
 pnx_die() {
@@ -120,7 +121,8 @@ pnx_password() {
 # pnx_menu TITLE TEXT TAG1 ITEM1 [TAG2 ITEM2 ...] -> echoes the chosen tag
 # Unattended runs pick the first tag.
 pnx_menu() {
-    local title="$1" text="$2"; shift 2
+    local title="$1" text="$2"
+    shift 2
     if pnx_have_whiptail; then
         whiptail --title "${title}" --menu "${text}" 22 78 10 "$@" 3>&1 1>&2 2>&3
         return $?
@@ -133,7 +135,9 @@ pnx_menu() {
     local i=1 tag desc
     local -a tags=()
     while [ $# -gt 0 ]; do
-        tag="$1"; desc="$2"; shift 2
+        tag="$1"
+        desc="$2"
+        shift 2
         tags+=("${tag}")
         printf '  %d) %s — %s\n' "${i}" "${tag}" "${desc}" >&2
         i=$((i + 1))
@@ -158,13 +162,13 @@ pnx_arch() {
     local m
     m="$(uname -m)"
     case "${m}" in
-        x86_64|amd64)         printf 'amd64' ;;
-        aarch64|arm64)        printf 'arm64' ;;
-        armv7l|armv7|armhf)   printf 'armv7' ;;
-        armv6l)               printf 'armv6' ;;
-        i386|i686)            printf '386'   ;;
-        riscv64)              printf 'riscv64' ;;
-        *)                    printf '%s' "${m}" ;;
+        x86_64 | amd64) printf 'amd64' ;;
+        aarch64 | arm64) printf 'arm64' ;;
+        armv7l | armv7 | armhf) printf 'armv7' ;;
+        armv6l) printf 'armv6' ;;
+        i386 | i686) printf '386' ;;
+        riscv64) printf 'riscv64' ;;
+        *) printf '%s' "${m}" ;;
     esac
 }
 
@@ -173,9 +177,9 @@ pnx_deb_arch() {
     local a
     a="$(pnx_arch)"
     case "${a}" in
-        armv7|armv6) printf 'armhf' ;;
-        386)         printf 'i386'  ;;
-        *)           printf '%s' "${a}" ;;
+        armv7 | armv6) printf 'armhf' ;;
+        386) printf 'i386' ;;
+        *) printf '%s' "${a}" ;;
     esac
 }
 
@@ -233,7 +237,7 @@ pnx_systemd_available() {
 }
 
 pnx_service_exists() {
-    systemctl list-unit-files "$1" >/dev/null 2>&1 && \
+    systemctl list-unit-files "$1" >/dev/null 2>&1 &&
         systemctl cat "$1" >/dev/null 2>&1
 }
 
@@ -258,7 +262,7 @@ pnx_service_enable_start() {
 pnx_apt_update_once() {
     if [ -z "${PNX_APT_UPDATED:-}" ]; then
         pnx_info "Refreshing APT package lists"
-        DEBIAN_FRONTEND=noninteractive apt-get update -qq || \
+        DEBIAN_FRONTEND=noninteractive apt-get update -qq ||
             pnx_warn "apt-get update reported errors; continuing"
         PNX_APT_UPDATED=1
     fi
@@ -327,8 +331,8 @@ pnx_ensure_user() {
 pnx_read_var_file() {
     local file="$1" key="$2"
     [ -r "${file}" ] || return 1
-    sed -n -E "s/^[[:space:]]*(export[[:space:]]+)?${key}=[\"']?([^\"'#]*)[\"']?.*/\2/p" "${file}" \
-        | tail -n1 | sed -E 's/[[:space:]]+$//'
+    sed -n -E "s/^[[:space:]]*(export[[:space:]]+)?${key}=[\"']?([^\"'#]*)[\"']?.*/\2/p" "${file}" |
+        tail -n1 | sed -E 's/[[:space:]]+$//'
 }
 
 # Emit a curl config-file body carrying credentials, for feeding to
@@ -340,11 +344,13 @@ pnx_curl_auth_config() {
     case "${auth}" in
         none) return 0 ;;
         basic) ;;
-        auto) printf 'anyauth\n' ;;   # credentials only if monerod asks (401)
+        auto) printf 'anyauth\n' ;; # credentials only if monerod asks (401)
         *) printf 'digest\n' ;;
     esac
-    user="${user//\\/\\\\}"; pass="${pass//\\/\\\\}"
-    user="${user//\"/\\\"}"; pass="${pass//\"/\\\"}"
+    user="${user//\\/\\\\}"
+    pass="${pass//\\/\\\\}"
+    user="${user//\"/\\\"}"
+    pass="${pass//\"/\\\"}"
     printf 'user = "%s:%s"\n' "${user}" "${pass}"
 }
 
@@ -354,7 +360,7 @@ pnx_curl_auth_config() {
 pnx_random_password() {
     local pw=""
     if [ -r /dev/urandom ]; then
-        pw="$(LC_ALL=C tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 24)"
+        pw="$(LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom | head -c 24)"
     fi
     # Fallbacks if /dev/urandom yielded nothing.
     [ -z "${pw}" ] && command -v openssl >/dev/null 2>&1 && pw="$(openssl rand -base64 18 | LC_ALL=C tr -dc 'A-Za-z0-9' | head -c 24)"
@@ -384,8 +390,12 @@ pnx_clear_section_markers() {
 # Safer than envsubst: it cannot mangle YAML/JSON containing $ characters.
 # pnx_render TEMPLATE DEST KEY=VALUE [KEY=VALUE ...]
 pnx_render() {
-    local tmpl="$1" dest="$2"; shift 2
-    [ -f "${tmpl}" ] || { pnx_error "Template not found: ${tmpl}"; return 1; }
+    local tmpl="$1" dest="$2"
+    shift 2
+    [ -f "${tmpl}" ] || {
+        pnx_error "Template not found: ${tmpl}"
+        return 1
+    }
     local tmp
     tmp="$(mktemp)"
     cp "${tmpl}" "${tmp}"
@@ -411,19 +421,22 @@ pnx_render() {
 pnx_firewall_allow() {
     local port="$1" comment="${2:-pinodexmr-monitoring}"
     [ "${PNX_MANAGE_FIREWALL}" = "true" ] || return 0
-    command -v ufw >/dev/null 2>&1 || { pnx_warn "ufw not installed; skipping firewall rule for ${port}"; return 0; }
+    command -v ufw >/dev/null 2>&1 || {
+        pnx_warn "ufw not installed; skipping firewall rule for ${port}"
+        return 0
+    }
     ufw status 2>/dev/null | grep -q '^Status: active' || {
         pnx_warn "ufw is installed but inactive; skipping firewall rule for ${port}"
         return 0
     }
     if [ -n "${PNX_ALLOW_CIDR}" ]; then
         pnx_info "ufw: allowing ${PNX_ALLOW_CIDR} -> ${port}/tcp"
-        ufw allow from "${PNX_ALLOW_CIDR}" to any port "${port}" proto tcp comment "${comment}" >/dev/null 2>&1 \
-            || pnx_warn "ufw rule failed for ${port}"
+        ufw allow from "${PNX_ALLOW_CIDR}" to any port "${port}" proto tcp comment "${comment}" >/dev/null 2>&1 ||
+            pnx_warn "ufw rule failed for ${port}"
     else
         pnx_info "ufw: allowing ${port}/tcp from anywhere"
-        ufw allow "${port}/tcp" comment "${comment}" >/dev/null 2>&1 \
-            || pnx_warn "ufw rule failed for ${port}"
+        ufw allow "${port}/tcp" comment "${comment}" >/dev/null 2>&1 ||
+            pnx_warn "ufw rule failed for ${port}"
     fi
 }
 

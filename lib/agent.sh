@@ -62,20 +62,22 @@ pnx_agent_auth_block() {
     local block=""
     case "${PNX_REMOTE_WRITE_AUTH}" in
         basic)
-            block="$(cat <<EOF
+            block="$(
+                cat <<EOF
     basic_auth:
       username: $(pnx_yaml_squote "${PNX_REMOTE_WRITE_USER}")
       password: $(pnx_yaml_squote "${PNX_REMOTE_WRITE_PASS}")
 EOF
-)"
+            )"
             ;;
         bearer)
-            block="$(cat <<EOF
+            block="$(
+                cat <<EOF
     authorization:
       type: Bearer
       credentials: $(pnx_yaml_squote "${PNX_REMOTE_WRITE_TOKEN}")
 EOF
-)"
+            )"
             ;;
         *)
             block="    # No authentication configured for this endpoint."
@@ -145,7 +147,10 @@ pnx_agent_verify_push() {
     local url="http://127.0.0.1:${PNX_AGENT_PORT}/metrics"
     local out failed succeeded
     for _ in $(seq 1 15); do
-        out=$(curl -sf --max-time 5 "${url}" 2>/dev/null) || { sleep 2; continue; }
+        out=$(curl -sf --max-time 5 "${url}" 2>/dev/null) || {
+            sleep 2
+            continue
+        }
         succeeded=$(printf '%s' "${out}" | awk '/^prometheus_remote_storage_samples_total/{s+=$2} END{print s+0}')
         failed=$(printf '%s' "${out}" | awk '/^prometheus_remote_storage_samples_failed_total/{s+=$2} END{print s+0}')
         if [ "${succeeded%.*}" -gt 0 ] 2>/dev/null; then
@@ -168,6 +173,9 @@ pnx_agent_install() {
         pull) pnx_agent_setup_pull ;;
         push) pnx_agent_setup_push ;;
         both) pnx_agent_setup_pull && pnx_agent_setup_push ;;
-        *)    pnx_error "Unknown agent transport: ${PNX_AGENT_TRANSPORT}"; return 1 ;;
+        *)
+            pnx_error "Unknown agent transport: ${PNX_AGENT_TRANSPORT}"
+            return 1
+            ;;
     esac
 }

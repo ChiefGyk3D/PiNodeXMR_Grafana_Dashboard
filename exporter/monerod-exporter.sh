@@ -37,15 +37,17 @@ FAILURE_SLEEP="${FAILURE_SLEEP:-10}"
 read_var_file() {
     local file="$1" key="$2"
     [ -r "${file}" ] || return 1
-    sed -n -E "s/^[[:space:]]*(export[[:space:]]+)?${key}=[\"']?([^\"'#]*)[\"']?.*/\2/p" "${file}" \
-        | tail -n1 | sed -E 's/[[:space:]]+$//'
+    sed -n -E "s/^[[:space:]]*(export[[:space:]]+)?${key}=[\"']?([^\"'#]*)[\"']?.*/\2/p" "${file}" |
+        tail -n1 | sed -E 's/[[:space:]]+$//'
 }
 
 # --- Load configuration --------------------------------------------------
 load_config() {
     if [ -r "${PNX_CONF_FILE}" ]; then
         # shellcheck disable=SC1090
-        set -a; . "${PNX_CONF_FILE}"; set +a
+        set -a
+        . "${PNX_CONF_FILE}"
+        set +a
     fi
 
     # PiNodeXMR mode: re-read the project's own variable files on every poll so
@@ -101,7 +103,8 @@ rpc_auth_config() {
     # curl config double-quoted strings honour \" and \\ escapes; escape both
     # so a credential containing either character is passed intact.
     local u="${RPC_USER//\\/\\\\}" p="${RPC_PASS//\\/\\\\}"
-    u="${u//\"/\\\"}"; p="${p//\"/\\\"}"
+    u="${u//\"/\\\"}"
+    p="${p//\"/\\\"}"
     printf 'user = "%s:%s"\n' "${u}" "${p}"
 }
 
@@ -131,7 +134,7 @@ read_cpu_temp() {
         [ -r "${zone}/temp" ] || continue
         type="$(cat "${zone}/type" 2>/dev/null)"
         case "${type}" in
-            *cpu*|*CPU*|*soc*|*SOC*|*x86_pkg*)
+            *cpu* | *CPU* | *soc* | *SOC* | *x86_pkg*)
                 temp="$(cat "${zone}/temp" 2>/dev/null)"
                 [ -n "${temp}" ] && awk -v t="${temp}" 'BEGIN{printf "%.1f", t/1000}' && return 0
                 ;;
@@ -149,7 +152,7 @@ read_cpu_temp() {
 # --- Write a failure-state metrics file ----------------------------------
 write_down_metrics() {
     local reason="$1"
-    cat > "${TEMP_FILE}" <<EOF
+    cat >"${TEMP_FILE}" <<EOF
 # HELP monerod_up Whether monerod RPC is reachable (1=up, 0=down).
 # TYPE monerod_up gauge
 monerod_up 0
@@ -184,8 +187,8 @@ write_metrics() {
     # Supplementary queries — each is optional; a failure degrades to zeroes
     # rather than taking the whole scrape down.
     local fees pool hfork lastblock
-    fees=$(rpc_call get_fee_estimate)          || fees='{}'
-    hfork=$(rpc_call hard_fork_info)           || hfork='{}'
+    fees=$(rpc_call get_fee_estimate) || fees='{}'
+    hfork=$(rpc_call hard_fork_info) || hfork='{}'
     lastblock=$(rpc_call get_last_block_header) || lastblock='{}'
     pool=$(rpc_get get_transaction_pool_stats) || pool='{}'
 
@@ -228,7 +231,7 @@ write_metrics() {
         incoming outgoing rpc_conns white_peerlist grey_peerlist \
         db_size free_space busy_syncing synchronized start_time \
         cumulative_difficulty update_available version network \
-        block_size_limit block_weight_limit <<< "${vals}"
+        block_size_limit block_weight_limit <<<"${vals}"
 
     # version and network become Prometheus label values, so restrict them to a
     # safe character set. Otherwise a quote or backslash from a malformed or
@@ -248,14 +251,14 @@ write_metrics() {
           (.pool_stats.txs_total // 0),
           (.pool_stats.fee_total // 0),
           (.pool_stats.num_double_spends // 0) ] | @tsv')
-    IFS=$'\t' read -r pool_bytes pool_txs pool_fee pool_double_spends <<< "${pool_vals}"
+    IFS=$'\t' read -r pool_bytes pool_txs pool_fee pool_double_spends <<<"${pool_vals}"
 
     local hf_vals hf_version hf_voting hf_enabled
     hf_vals=$(printf '%s' "${hfork}" | jq -r '
         [ (.result.version // 0),
           (.result.voting // 0),
           (if .result.enabled then 1 else 0 end) ] | @tsv')
-    IFS=$'\t' read -r hf_version hf_voting hf_enabled <<< "${hf_vals}"
+    IFS=$'\t' read -r hf_version hf_voting hf_enabled <<<"${hf_vals}"
 
     local blk_vals block_reward block_size block_num_txes block_timestamp block_difficulty
     blk_vals=$(printf '%s' "${lastblock}" | jq -r '
@@ -265,7 +268,7 @@ write_metrics() {
           (.num_txes // 0),
           (.timestamp // 0),
           (.difficulty // 0) ] | @tsv')
-    IFS=$'\t' read -r block_reward block_size block_num_txes block_timestamp block_difficulty <<< "${blk_vals}"
+    IFS=$'\t' read -r block_reward block_size block_num_txes block_timestamp block_difficulty <<<"${blk_vals}"
 
     # Sync progress. target_height is 0 once monerod considers itself synced.
     local sync_pct=0
@@ -278,7 +281,7 @@ write_metrics() {
     scrape_end="$(date +%s.%N)"
     scrape_duration=$(awk -v a="${scrape_start}" -v b="${scrape_end}" 'BEGIN{printf "%.4f", b-a}')
 
-    cat > "${TEMP_FILE}" <<EOF
+    cat >"${TEMP_FILE}" <<EOF
 # HELP monerod_up Whether monerod RPC is reachable (1=up, 0=down).
 # TYPE monerod_up gauge
 monerod_up 1
@@ -441,8 +444,14 @@ EOF
 }
 
 # --- Preflight -----------------------------------------------------------
-command -v jq >/dev/null 2>&1   || { echo "monerod-exporter: jq is required"   >&2; exit 1; }
-command -v curl >/dev/null 2>&1 || { echo "monerod-exporter: curl is required" >&2; exit 1; }
+command -v jq >/dev/null 2>&1 || {
+    echo "monerod-exporter: jq is required" >&2
+    exit 1
+}
+command -v curl >/dev/null 2>&1 || {
+    echo "monerod-exporter: curl is required" >&2
+    exit 1
+}
 
 FAIL_COUNT=0
 load_config

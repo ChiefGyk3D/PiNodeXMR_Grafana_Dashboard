@@ -98,7 +98,7 @@ pnx_ne_configure_apt() {
         # risk of ending up with two conflicting --web.listen-address values.
         sed -i "s|^ARGS=.*|ARGS=\"${args}\"|" "${defaults}"
     else
-        printf 'ARGS="%s"\n' "${args}" >> "${defaults}"
+        printf 'ARGS="%s"\n' "${args}" >>"${defaults}"
     fi
 
     pnx_service_enable_start "${PNX_NE_APT_UNIT}"
@@ -152,8 +152,8 @@ pnx_node_exporter_setup() {
     pnx_info "node_exporter detection: ${flavour}"
 
     case "${flavour}" in
-        none)   pnx_ne_install_binary   || return 1 ;;
-        apt)    pnx_ne_configure_apt    || return 1 ;;
+        none) pnx_ne_install_binary || return 1 ;;
+        apt) pnx_ne_configure_apt || return 1 ;;
         custom) pnx_ne_configure_custom || return 1 ;;
     esac
 

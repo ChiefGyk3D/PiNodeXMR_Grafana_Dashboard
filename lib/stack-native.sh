@@ -43,7 +43,7 @@ pnx_prometheus_install_binary() {
 
     local src="${tmpdir}/prometheus-${ver}.linux-${arch}"
     install -m 0755 -o root -g root "${src}/prometheus" /usr/local/bin/prometheus || return 1
-    install -m 0755 -o root -g root "${src}/promtool"   /usr/local/bin/promtool   || return 1
+    install -m 0755 -o root -g root "${src}/promtool" /usr/local/bin/promtool || return 1
 
     pnx_info "Installed Prometheus ${ver} (${arch})"
 }
@@ -109,7 +109,7 @@ pnx_grafana_add_repo() {
         rm -f "${tmpkey}"
         return 1
     }
-    gpg --dearmor --yes -o /etc/apt/keyrings/grafana.gpg < "${tmpkey}" || {
+    gpg --dearmor --yes -o /etc/apt/keyrings/grafana.gpg <"${tmpkey}" || {
         rm -f "${tmpkey}"
         pnx_error "Failed to import the Grafana signing key"
         return 1
@@ -118,7 +118,7 @@ pnx_grafana_add_repo() {
     chmod 0644 /etc/apt/keyrings/grafana.gpg
 
     printf 'deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main\n' \
-        > /etc/apt/sources.list.d/grafana.list
+        >/etc/apt/sources.list.d/grafana.list
 
     # Force a refresh now that a new source exists.
     unset PNX_APT_UPDATED
@@ -198,7 +198,7 @@ pnx_grafana_setup() {
         # Prefer --password-from-stdin (Grafana 9.1+) so the password never
         # touches argv, which is world-readable via /proc. Fall back to the
         # positional form only on older grafana-cli that lacks the flag.
-        if printf '%s' "${PNX_GRAFANA_ADMIN_PASS}" | \
+        if printf '%s' "${PNX_GRAFANA_ADMIN_PASS}" |
             grafana-cli "${cli_args[@]}" admin reset-admin-password --password-from-stdin >/dev/null 2>&1; then
             pnx_grafana_verify_admin_pass
         elif grafana-cli "${cli_args[@]}" admin reset-admin-password "${PNX_GRAFANA_ADMIN_PASS}" >/dev/null 2>&1; then
@@ -223,7 +223,7 @@ pnx_grafana_verify_admin_pass() {
         "http://127.0.0.1:${PNX_GRAFANA_PORT}/api/org" 2>/dev/null)"
     case "${code}" in
         200) pnx_info "Grafana admin password set and verified for user '${PNX_GRAFANA_ADMIN_USER}'" ;;
-        401|403) pnx_warn "Grafana did not accept the admin password that was just set — it may still be on its previous credentials. Set it manually if login fails." ;;
+        401 | 403) pnx_warn "Grafana did not accept the admin password that was just set — it may still be on its previous credentials. Set it manually if login fails." ;;
         *) pnx_info "Grafana admin password set for user '${PNX_GRAFANA_ADMIN_USER}' (verification skipped: Grafana not answering yet)" ;;
     esac
 }
@@ -234,7 +234,7 @@ pnx_grafana_set_env() {
     if grep -qE "^[#[:space:]]*${key}=" "${file}" 2>/dev/null; then
         sed -i "s|^[#[:space:]]*${key}=.*|${key}=${value}|" "${file}"
     else
-        printf '%s=%s\n' "${key}" "${value}" >> "${file}"
+        printf '%s=%s\n' "${key}" "${value}" >>"${file}"
     fi
 }
 

@@ -103,9 +103,9 @@ pnx_ask_rpc() {
         local auth
         auth="$(pnx_menu "${PNX_TITLE} — monerod RPC" "How is the monerod RPC authenticated?" \
             "digest" "HTTP digest auth (monerod default with --rpc-login)" \
-            "basic"  "HTTP basic auth (behind a reverse proxy)" \
-            "auto"   "Send credentials only if monerod asks (works with or without --rpc-login)" \
-            "none"   "No authentication")"
+            "basic" "HTTP basic auth (behind a reverse proxy)" \
+            "auto" "Send credentials only if monerod asks (works with or without --rpc-login)" \
+            "none" "No authentication")"
         PNX_RPC_AUTH="${auth:-digest}"
 
         if [ "${PNX_RPC_AUTH}" != "none" ]; then
@@ -128,7 +128,7 @@ pnx_test_rpc_now() {
 
     local rpc host port user pass auth height
     rpc="$(pnx_exporter_effective_rpc)"
-    IFS=$'\t' read -r host port user pass <<< "${rpc}"
+    IFS=$'\t' read -r host port user pass <<<"${rpc}"
     # Same rule as the exporter: on PiNodeXMR the node mode decides whether
     # monerod wants a login, so send credentials only when challenged.
     auth="${PNX_RPC_AUTH}"
@@ -197,7 +197,7 @@ pnx_ask_grafana() {
     local bind
     bind="$(pnx_menu "${PNX_TITLE} — Grafana" \
         "Who should be able to reach the Grafana web interface?" \
-        "0.0.0.0"   "Any machine on the network (typical home LAN use)" \
+        "0.0.0.0" "Any machine on the network (typical home LAN use)" \
         "127.0.0.1" "This device only — reach it via SSH tunnel, VPN or Tor")"
     PNX_GRAFANA_BIND="${bind:-0.0.0.0}"
 
@@ -207,8 +207,8 @@ pnx_ask_grafana() {
     while true; do
         p1="$(pnx_password "${PNX_TITLE} — Grafana" "Set the Grafana admin password (user: ${PNX_GRAFANA_ADMIN_USER}).\n\nLeave blank to keep the existing password if Grafana is already installed.")"
         if [ -z "${p1}" ]; then
-            if [ -n "${PNX_GRAFANA_ADMIN_PASS}" ] || dpkg -s grafana >/dev/null 2>&1 || \
-               [ -f "${PNX_DOCKER_DIR}/secrets/grafana_admin_password" ] || [ "${PNX_ASSUME_YES}" = "1" ]; then
+            if [ -n "${PNX_GRAFANA_ADMIN_PASS}" ] || dpkg -s grafana >/dev/null 2>&1 ||
+                [ -f "${PNX_DOCKER_DIR}/secrets/grafana_admin_password" ] || [ "${PNX_ASSUME_YES}" = "1" ]; then
                 break
             fi
             pnx_msgbox "${PNX_TITLE} — Grafana" "A password is required for a new Grafana installation.\n\nOtherwise Grafana would be left on its admin/admin default, reachable by anyone who can see the port."
@@ -296,7 +296,7 @@ pnx_ask_prometheus() {
         local bind
         bind="$(pnx_menu "${PNX_TITLE} — Prometheus" \
             "Your Grafana elsewhere must be able to query this Prometheus.\n\nWho may reach it?" \
-            "0.0.0.0"   "Any machine on the network (required unless you tunnel)" \
+            "0.0.0.0" "Any machine on the network (required unless you tunnel)" \
             "127.0.0.1" "This device only — you will reach it via SSH tunnel or VPN")"
         PNX_PROM_BIND="${bind:-0.0.0.0}"
     else
@@ -320,7 +320,7 @@ pnx_ask_agent() {
     PNX_AGENT_TRANSPORT="${t:-push}"
 
     case "${PNX_AGENT_TRANSPORT}" in
-        pull|both)
+        pull | both)
             PNX_NODE_EXPORTER_BIND="0.0.0.0"
             PNX_NODE_EXPORTER_PORT="$(pnx_prompt_port "${PNX_TITLE} — Agent" \
                 "Which port should node_exporter listen on for your Prometheus to scrape?" \
@@ -332,7 +332,7 @@ pnx_ask_agent() {
     esac
 
     case "${PNX_AGENT_TRANSPORT}" in
-        push|both)
+        push | both)
             local url
             while true; do
                 url="$(pnx_input "${PNX_TITLE} — Agent" \
@@ -348,9 +348,9 @@ pnx_ask_agent() {
             local auth
             auth="$(pnx_menu "${PNX_TITLE} — Agent" \
                 "How does that endpoint authenticate?" \
-                "basic"  "Username and password (Grafana Cloud uses this)" \
+                "basic" "Username and password (Grafana Cloud uses this)" \
                 "bearer" "Bearer token / API key" \
-                "none"   "No authentication")"
+                "none" "No authentication")"
             PNX_REMOTE_WRITE_AUTH="${auth:-none}"
 
             case "${PNX_REMOTE_WRITE_AUTH}" in
@@ -385,16 +385,28 @@ pnx_interview() {
     local topo
     topo="$(pnx_menu "${PNX_TITLE}" \
         "Where should each piece run?\n\nMetrics collection always runs on this device; Grafana (the dashboard) and Prometheus (the database) can each live here or elsewhere." \
-        "full"    "Everything on this device (Grafana + Prometheus)" \
+        "full" "Everything on this device (Grafana + Prometheus)" \
         "backend" "Database here — I already have Grafana elsewhere" \
-        "viewer"  "Grafana here — I already have a database elsewhere" \
-        "agent"   "Neither — just report metrics to a stack elsewhere")"
+        "viewer" "Grafana here — I already have a database elsewhere" \
+        "agent" "Neither — just report metrics to a stack elsewhere")"
 
     case "${topo:-full}" in
-        full)    PNX_INSTALL_PROMETHEUS="true";  PNX_INSTALL_GRAFANA="true"  ;;
-        backend) PNX_INSTALL_PROMETHEUS="true";  PNX_INSTALL_GRAFANA="false" ;;
-        viewer)  PNX_INSTALL_PROMETHEUS="false"; PNX_INSTALL_GRAFANA="true"  ;;
-        agent)   PNX_INSTALL_PROMETHEUS="false"; PNX_INSTALL_GRAFANA="false" ;;
+        full)
+            PNX_INSTALL_PROMETHEUS="true"
+            PNX_INSTALL_GRAFANA="true"
+            ;;
+        backend)
+            PNX_INSTALL_PROMETHEUS="true"
+            PNX_INSTALL_GRAFANA="false"
+            ;;
+        viewer)
+            PNX_INSTALL_PROMETHEUS="false"
+            PNX_INSTALL_GRAFANA="true"
+            ;;
+        agent)
+            PNX_INSTALL_PROMETHEUS="false"
+            PNX_INSTALL_GRAFANA="false"
+            ;;
     esac
 
     pnx_ask_instance_name
@@ -405,7 +417,7 @@ pnx_interview() {
         full)
             pnx_ask_stack_flavour "Prometheus and Grafana"
             pnx_ask_grafana
-            PNX_GRAFANA_DS_URL=""   # dashboard reads the local Prometheus
+            PNX_GRAFANA_DS_URL="" # dashboard reads the local Prometheus
             pnx_ask_prometheus 0
             # A containerised Prometheus reaches node_exporter over the Docker
             # bridge, not loopback, so it must listen on all interfaces there.
@@ -466,7 +478,7 @@ pnx_do_install() {
     if [ "${PNX_INSTALL_GRAFANA}" = "true" ] && [ -z "${PNX_GRAFANA_ADMIN_PASS}" ]; then
         local grafana_fresh=1
         if [ "${PNX_LOCAL_STACK}" = "docker" ]; then
-            [ -f "${PNX_DOCKER_DIR}/secrets/grafana_admin_password" ] && \
+            [ -f "${PNX_DOCKER_DIR}/secrets/grafana_admin_password" ] &&
                 [ -s "${PNX_DOCKER_DIR}/secrets/grafana_admin_password" ] && grafana_fresh=0
         else
             dpkg -s grafana >/dev/null 2>&1 && grafana_fresh=0
@@ -491,7 +503,7 @@ pnx_do_install() {
     if [ "${PNX_INSTALL_PROMETHEUS}" != "true" ]; then
         pnx_agent_install || pnx_die "Metrics transport setup failed."
         case "${PNX_AGENT_TRANSPORT}" in
-            push|both) pnx_agent_verify_push ;;
+            push | both) pnx_agent_verify_push ;;
         esac
     fi
 
@@ -547,7 +559,7 @@ pnx_report() {
             msg+="\nNote: Prometheus is bound to localhost, so your Grafana will need\nan SSH tunnel or VPN to reach it:\n  ssh -L ${PNX_PROM_PORT}:127.0.0.1:${PNX_PROM_PORT} pinodexmr@${ip}\n"
         fi
         printf 'Add this datasource to your Grafana:\n  URL: http://%s:%s\n  Type: Prometheus\n\nThen import dashboards/pinodexmr-dashboard.json and pick it when asked.\n' \
-            "${ip}" "${PNX_PROM_PORT}" > "${PNX_STATE_DIR}/remote-grafana-setup.txt"
+            "${ip}" "${PNX_PROM_PORT}" >"${PNX_STATE_DIR}/remote-grafana-setup.txt"
         msg+="\nThese steps are also saved in:\n  ${PNX_STATE_DIR}/remote-grafana-setup.txt\n"
     fi
 
@@ -555,14 +567,14 @@ pnx_report() {
     if [ "${PNX_INSTALL_PROMETHEUS}" != "true" ]; then
         msg+="\nMetrics transport: ${PNX_AGENT_TRANSPORT}\n"
         case "${PNX_AGENT_TRANSPORT}" in
-            pull|both)
+            pull | both)
                 msg+="\nScrape this device at:  ${ip}:${PNX_NODE_EXPORTER_PORT}\n"
                 msg+="The scrape_config to add to your Prometheus has been written to:\n  ${PNX_STATE_DIR}/remote-scrape-config.yml\n"
-                pnx_agent_pull_snippet > "${PNX_STATE_DIR}/remote-scrape-config.yml"
+                pnx_agent_pull_snippet >"${PNX_STATE_DIR}/remote-scrape-config.yml"
                 ;;
         esac
         case "${PNX_AGENT_TRANSPORT}" in
-            push|both)
+            push | both)
                 msg+="\nPushing to: ${PNX_REMOTE_WRITE_URL}\n"
                 msg+="Check it with: journalctl -u prometheus-agent -f\n"
                 ;;
@@ -618,7 +630,7 @@ pnx_status() {
         local up height age
         up="$(awk '/^monerod_up /{print $2}' "${prom_file}")"
         height="$(awk '/^monerod_height /{print $2}' "${prom_file}")"
-        age=$(( $(date +%s) - $(stat -c %Y "${prom_file}" 2>/dev/null || echo 0) ))
+        age=$(($(date +%s) - $(stat -c %Y "${prom_file}" 2>/dev/null || echo 0)))
         out+="  monerod_up:     ${up:-?}\n"
         out+="  monerod_height: ${height:-?}\n"
         out+="  last written:   ${age}s ago\n"
@@ -641,11 +653,18 @@ main() {
 
     while [ $# -gt 0 ]; do
         case "$1" in
-            --unattended|-y) PNX_ASSUME_YES=1 ;;
-            --status)        action="status" ;;
-            --uninstall)     action="uninstall" ;;
-            --help|-h)       usage; exit 0 ;;
-            *) printf 'Unknown option: %s\n\n' "$1"; usage; exit 1 ;;
+            --unattended | -y) PNX_ASSUME_YES=1 ;;
+            --status) action="status" ;;
+            --uninstall) action="uninstall" ;;
+            --help | -h)
+                usage
+                exit 0
+                ;;
+            *)
+                printf 'Unknown option: %s\n\n' "$1"
+                usage
+                exit 1
+                ;;
         esac
         shift
     done
@@ -669,15 +688,21 @@ main() {
         choice="$(pnx_menu "${PNX_TITLE}" \
             "Monitoring is already configured on this device.\n\nWhat would you like to do?" \
             "reconfigure" "Change settings and reinstall" \
-            "repair"      "Reinstall with the current settings" \
-            "status"      "Show current status" \
-            "uninstall"   "Remove the monitoring add-on" \
-            "cancel"      "Exit without changes")"
+            "repair" "Reinstall with the current settings" \
+            "status" "Show current status" \
+            "uninstall" "Remove the monitoring add-on" \
+            "cancel" "Exit without changes")"
         case "${choice}" in
-            status)    pnx_status; exit 0 ;;
+            status)
+                pnx_status
+                exit 0
+                ;;
             uninstall) exec "${PNX_SRC_DIR}/uninstall.sh" ;;
-            cancel|"") exit 0 ;;
-            repair)    pnx_do_install; exit 0 ;;
+            cancel | "") exit 0 ;;
+            repair)
+                pnx_do_install
+                exit 0
+                ;;
         esac
     fi
 
